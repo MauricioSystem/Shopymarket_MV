@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "prestart": "node initializer.js",
+    "start": "node index.js",
+    "prebuild": "node initializer.js",
+    "build": "echo \"No backend build step defined\"",
+    "db:init": "node initializer.js"
   },
   "keywords": [],
   "author": "",

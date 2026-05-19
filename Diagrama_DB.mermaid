@@ -1,0 +1,273 @@
+erDiagram
+    users ||--o{ user_roles : "has"
+    roles ||--o{ user_roles : "assigned_to"
+    users ||--o{ user_subscriptions : "subscribes"
+    subscription_plans ||--o{ user_subscriptions : "defines"
+    users ||--o{ stores : "manages"
+    users ||--o{ service_profiles : "manages"
+    stores ||--o{ service_profiles : "associated_with"
+    categories ||--o{ subcategories : "groups"
+    stores ||--o{ subcategories : "owns"
+    stores ||--o{ products : "sells"
+    categories ||--o{ products : "classifies"
+    subcategories ||--o{ products : "sub-classifies"
+    service_profiles ||--o{ services : "offers"
+    categories ||--o{ services : "classifies"
+    users ||--o{ carts : "owns"
+    carts ||--o{ cart_items : "contains"
+    products ||--o{ cart_items : "added_as"
+    users ||--o{ orders : "places"
+    stores ||--o{ orders : "receives"
+    users ||--o{ orders : "delivers"
+    orders ||--o{ order_details : "contains"
+    products ||--o{ order_details : "includes_product"
+    services ||--o{ order_details : "includes_service"
+    orders ||--|| payments : "paid_by"
+    orders ||--|| deliveries : "delivered_via"
+    users ||--o{ reviews : "writes"
+    products ||--o{ reviews : "reviews_product"
+    services ||--o{ reviews : "reviews_service"
+    stores ||--o{ reviews : "reviews_store"
+    service_profiles ||--o{ reviews : "reviews_service_profile"
+    users ||--o{ user_points : "earns_or_spends"
+    orders ||--o{ user_points : "generates"
+    users ||--o{ chatbot_conversations : "starts"
+    chatbot_conversations ||--o{ chatbot_messages : "contains"
+    users ||--o{ pages : "creates"
+
+    users {
+        bigint id PK
+        varchar first_name
+        varchar last_name
+        varchar email
+        text password_hash
+        varchar phone
+        text profile_image_url
+        varchar country
+        varchar city
+        text address
+        varchar status
+        timestamp created_at
+    }
+
+    roles {
+        bigint id PK
+        varchar name
+        text description
+    }
+
+    user_roles {
+        bigint user_id PK, FK
+        bigint role_id PK, FK
+    }
+
+    subscription_plans {
+        bigint id PK
+        varchar name
+        varchar type
+        numeric price
+        numeric discount
+        boolean free_shipping
+        boolean points_enabled
+        boolean featured_products
+        boolean reduced_commission
+        boolean search_priority
+        varchar status
+    }
+
+    user_subscriptions {
+        bigint id PK
+        bigint user_id FK
+        bigint plan_id FK
+        timestamp start_date
+        timestamp end_date
+        varchar status
+    }
+
+    stores {
+        bigint id PK
+        bigint admin_user_id FK
+        varchar name
+        text description
+        varchar background_color
+        text logo_url
+        text banner_url
+        varchar country
+        varchar city
+        text address
+        varchar status
+        timestamp created_at
+    }
+
+    service_profiles {
+        bigint id PK
+        bigint admin_user_id FK
+        bigint store_id FK
+        varchar name
+        text description
+        varchar background_color
+        text profile_image_url
+        text banner_url
+        varchar country
+        varchar city
+        text address
+        varchar status
+        timestamp created_at
+    }
+
+    categories {
+        bigint id PK
+        varchar name
+        varchar type
+        varchar status
+    }
+
+    subcategories {
+        bigint id PK
+        bigint category_id FK
+        bigint store_id FK
+        varchar name
+        varchar status
+    }
+
+    products {
+        bigint id PK
+        bigint store_id FK
+        bigint category_id FK
+        bigint subcategory_id FK
+        varchar name
+        text description
+        numeric price
+        integer stock
+        text image_url
+        numeric average_rating
+        integer sales_count
+        boolean is_featured
+        varchar status
+        timestamp created_at
+    }
+
+    services {
+        bigint id PK
+        bigint service_profile_id FK
+        bigint category_id FK
+        varchar name
+        text description
+        numeric price
+        varchar estimated_time
+        text image_url
+        numeric average_rating
+        integer contracts_count
+        varchar status
+        timestamp created_at
+    }
+
+    carts {
+        bigint id PK
+        bigint customer_user_id FK
+        varchar status
+        timestamp created_at
+    }
+
+    cart_items {
+        bigint id PK
+        bigint cart_id FK
+        bigint product_id FK
+        integer quantity
+        numeric unit_price
+        numeric subtotal
+    }
+
+    orders {
+        bigint id PK
+        bigint customer_user_id FK
+        bigint store_id FK
+        bigint delivery_user_id FK
+        varchar order_type
+        varchar status
+        numeric subtotal
+        numeric discount
+        numeric shipping_cost
+        numeric total
+        text delivery_address
+        timestamp created_at
+    }
+
+    order_details {
+        bigint id PK
+        bigint order_id FK
+        bigint product_id FK
+        bigint service_id FK
+        integer quantity
+        numeric unit_price
+        numeric subtotal
+    }
+
+    payments {
+        bigint id PK
+        bigint order_id FK
+        varchar payment_method
+        varchar payment_status
+        numeric amount
+        varchar transaction_reference
+        timestamp paid_at
+    }
+
+    deliveries {
+        bigint id PK
+        bigint order_id FK
+        bigint delivery_user_id FK
+        varchar delivery_status
+        text origin_address
+        text destination_address
+        text current_location
+        timestamp assigned_at
+        timestamp delivered_at
+    }
+
+    reviews {
+        bigint id PK
+        bigint user_id FK
+        bigint product_id FK
+        bigint service_id FK
+        bigint store_id FK
+        bigint service_profile_id FK
+        integer rating
+        text comment
+        timestamp created_at
+    }
+
+    user_points {
+        bigint id PK
+        bigint user_id FK
+        bigint order_id FK
+        integer points
+        varchar movement_type
+        timestamp expiration_date
+        timestamp created_at
+    }
+
+    chatbot_conversations {
+        bigint id PK
+        bigint user_id FK
+        varchar title
+        timestamp created_at
+    }
+
+    chatbot_messages {
+        bigint id PK
+        bigint conversation_id FK
+        varchar role
+        text message
+        timestamp created_at
+    }
+
+    pages {
+        bigint id PK
+        bigint created_by_user_id FK
+        varchar title
+        varchar slug
+        text content
+        varchar status
+        timestamp created_at
+    }
