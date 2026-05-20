@@ -10,7 +10,7 @@ const { authenticate, authorize } = require('../../middlewares');
 
 router.use(authenticate);
 router.get('/', authorize('admin', 'super_admin'), getAllUsers);
-router.get('/:id', authorize('admin', 'super_admin', 'seller', 'customer', 'delivery'), getUserById);
+router.get('/:id', authorize('admin', 'super_admin', 'cliente', 'repartidor'), getUserById);
 router.get('/:id/roles', authorize('admin', 'super_admin'), getUserRoles);
 router.post('/', authorize('admin', 'super_admin'), createUser);
 router.put('/:id', authorize('admin', 'super_admin'), updateUser);
