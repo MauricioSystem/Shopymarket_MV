@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const pool = require('./src/config/database');
+const pool = require('./src/db/database');
 require('dotenv').config();
 
 const hashPassword = (password) => {
@@ -288,12 +288,7 @@ CREATE TABLE IF NOT EXISTS pages (
 const init = async () => {
   try {
     await pool.query('BEGIN');
-    console.log('🔧 Creando tablas si no existen...');
     await pool.query(SQL);
-
-    console.log(' Tablas creadas o ya existentes.');
-
-    console.log(' Insertando roles por defecto...');
     await pool.query(
       `INSERT INTO roles (name, description)
        VALUES
@@ -305,7 +300,7 @@ const init = async () => {
       `
     );
 
-    console.log(' Insertando plan de suscripción por defecto...');
+
     await pool.query(
       `INSERT INTO subscription_plans (name, type, price, discount, free_shipping, points_enabled, featured_products, reduced_commission, search_priority, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -321,7 +316,6 @@ const init = async () => {
     const phone = process.env.SUPERADMIN_PHONE || '+0000000000';
     const passwordHash = hashPassword(password);
 
-    console.log(`👤 Creando usuario Super Admin: ${email}`);
     const userResult = await pool.query(
       `INSERT INTO users (first_name, last_name, email, password_hash, phone, status)
        VALUES ($1, $2, $3, $4, $5, 'active')
@@ -351,8 +345,7 @@ const init = async () => {
     await pool.query('COMMIT');
 
     console.log(' Inicialización completada.');
-    console.log(`Super Admin listo para iniciar sesión con: ${email}`);
-    console.log(`Contraseña por defecto: ${password}`);
+
   } catch (error) {
     await pool.query('ROLLBACK');
     console.error(' Error durante la inicialización:', error);
