@@ -1,9 +1,13 @@
-const userService = require('../../services/userService');
+const userService = require('../../services/userServices');
 
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const userData = req.body;
+        const userData = { ...req.body };
+
+        if (req.file) {
+            userData.profile_image_url = `/uploads/profile_images/${req.file.filename}`;
+        }
 
         if (!userData || Object.keys(userData).length === 0) {
             return res.status(400).json({

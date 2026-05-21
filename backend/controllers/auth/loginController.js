@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const userModel = require('../../models/userModel');
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const authConfig = require('../../config/authConfig');
 
@@ -23,13 +24,27 @@ const login = async (req, res) => {
             });
         }
 
-        const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+        let passwordMatches = await bcrypt.compare(password, user.password_hash);
+        let migratedLegacyHash = false;
 
-        if (passwordHash !== user.password_hash) {
+        if (!passwordMatches) {
+            const legacyHash = crypto.createHash('sha256').update(password).digest('hex');
+            if (legacyHash === user.password_hash) {
+                passwordMatches = true;
+                migratedLegacyHash = true;
+            }
+        }
+
+        if (!passwordMatches) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
+        }
+
+        if (migratedLegacyHash) {
+            const newHash = await bcrypt.hash(password, 10);
+            await userModel.updatePasswordHash(user.id, newHash);
         }
 
         // Obtener los roles reales del usuario desde la BD

@@ -77,17 +77,73 @@ const createUser = async (userData) => {
 };
 
 const updateUser = async (userId, userData) => {
-    const { first_name, last_name, phone, profile_image_url, country, city, address } = userData;
+    const { first_name, last_name, phone, profile_image_url, country, city, address, email, password_hash } = userData;
+    
+    let setClause = [];
+    let values = [];
+    let paramCount = 1;
+
+    if (first_name !== undefined) {
+        setClause.push(`first_name = $${paramCount++}`);
+        values.push(first_name);
+    }
+    if (last_name !== undefined) {
+        setClause.push(`last_name = $${paramCount++}`);
+        values.push(last_name);
+    }
+    if (phone !== undefined) {
+        setClause.push(`phone = $${paramCount++}`);
+        values.push(phone);
+    }
+    if (profile_image_url !== undefined) {
+        setClause.push(`profile_image_url = $${paramCount++}`);
+        values.push(profile_image_url);
+    }
+    if (country !== undefined) {
+        setClause.push(`country = $${paramCount++}`);
+        values.push(country);
+    }
+    if (city !== undefined) {
+        setClause.push(`city = $${paramCount++}`);
+        values.push(city);
+    }
+    if (address !== undefined) {
+        setClause.push(`address = $${paramCount++}`);
+        values.push(address);
+    }
+    if (email !== undefined) {
+        setClause.push(`email = $${paramCount++}`);
+        values.push(email);
+    }
+    if (password_hash !== undefined) {
+        setClause.push(`password_hash = $${paramCount++}`);
+        values.push(password_hash);
+    }
+
+    if (setClause.length === 0) {
+        return null;
+    }
+
+    values.push(userId);
     const query = `
         UPDATE users
-        SET first_name = $1, last_name = $2, phone = $3, profile_image_url = $4, 
-            country = $5, city = $6, address = $7
-        WHERE id = $8
+        SET ${setClause.join(', ')}
+        WHERE id = $${paramCount}
         RETURNING id, first_name, last_name, email, phone, profile_image_url, 
                   country, city, address, status, created_at
     `;
-    const values = [first_name, last_name, phone, profile_image_url, country, city, address, userId];
     const result = await pool.query(query, values);
+    return result.rows[0] || null;
+};
+
+const updatePasswordHash = async (userId, password_hash) => {
+    const query = `
+        UPDATE users
+        SET password_hash = $1
+        WHERE id = $2
+        RETURNING id;
+    `;
+    const result = await pool.query(query, [password_hash, userId]);
     return result.rows[0] || null;
 };
 
@@ -129,6 +185,7 @@ module.exports = {
     getUserByEmail,
     createUser,
     updateUser,
+    updatePasswordHash,
     deleteUser,
     getUserRoles,
     assignRoleToUser

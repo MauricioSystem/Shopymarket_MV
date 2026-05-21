@@ -15,12 +15,12 @@ const parseEndpointList = (value, fallback) => {
 
 const LOGIN_ENDPOINTS = parseEndpointList(
     import.meta.env.VITE_AUTH_LOGIN_PATHS,
-    ['/auth/login', '/api/auth/login', '/login'],
+    ['/api/auth/login', '/auth/login', '/login'],
 );
 
 const REGISTER_ENDPOINTS = parseEndpointList(
     import.meta.env.VITE_AUTH_REGISTER_PATHS,
-    ['/auth/register', '/api/auth/register', '/register'],
+    ['/api/auth/register', '/auth/register', '/register'],
 );
 
 const buildUrl = (path) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;

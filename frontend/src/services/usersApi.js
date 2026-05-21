@@ -30,3 +30,11 @@ export async function getAllUsers(token) {
 export async function getUserById(token, userId) {
     return apiFetch(`/api/users/${userId}`, { token });
 }
+
+export async function updateUserProfile(token, userId, userData) {
+    return apiFetch(`/api/users/${userId}`, {
+        token,
+        method: 'PUT',
+        body: userData,
+    });
+}

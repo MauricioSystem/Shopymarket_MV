@@ -1,7 +1,8 @@
 const authenticate = require('./authMiddleware');
-const authorize = require('./roleMiddleware');
+const { authorize, authorizeProfileUpdate } = require('./roleMiddleware');
 
 module.exports = {
     authenticate,
-    authorize
+    authorize,
+    authorizeProfileUpdate
 };

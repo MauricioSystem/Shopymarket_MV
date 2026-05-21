@@ -1,9 +1,9 @@
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const pool = require('./src/db/database');
 require('dotenv').config();
 
 const hashPassword = (password) => {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  return bcrypt.hash(password, 10);
 };
 
 const SQL = `
@@ -314,7 +314,7 @@ const init = async () => {
     const firstName = process.env.SUPERADMIN_FIRST_NAME || 'Super';
     const lastName = process.env.SUPERADMIN_LAST_NAME || 'Admin';
     const phone = process.env.SUPERADMIN_PHONE || '+0000000000';
-    const passwordHash = hashPassword(password);
+    const passwordHash = await hashPassword(password);
 
     const userResult = await pool.query(
       `INSERT INTO users (first_name, last_name, email, password_hash, phone, status)
