@@ -1,34 +1,22 @@
-const jwt = require('jsonwebtoken');
 const authConfig = require('../config/authConfig');
 
 const authenticate = (req, res, next) => {
-    const authHeader = req.headers[authConfig.authHeader];
+    const authorization = req.headers[authConfig.authHeader];
+    const userId = req.headers[authConfig.userIdHeader];
+    const userRole = req.headers[authConfig.userRoleHeader];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!userId || !userRole) {
         return res.status(401).json({
             success: false,
-            message: 'Authentication required. Provide a valid Bearer token.'
+            message: 'Authentication required'
         });
     }
 
-    const token = authHeader.split(' ')[1];
-
-    try {
-        const decoded = jwt.verify(token, authConfig.jwtSecret);
-        req.user = {
-            id: decoded.id,
-            role: decoded.role
-        };
-        next();
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: error.name === 'TokenExpiredError'
-                ? 'Session expired. Please log in again.'
-                : 'Invalid token. Authentication failed.'
-        });
-    }
+    req.user = {
+        id: userId,
+        role: userRole
+    };
+    next();
 };
 
 module.exports = authenticate;
-

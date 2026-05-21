@@ -3,7 +3,7 @@ const crypto = require('crypto');
 
 const getAllUsers = async () => {
     try {
-        const users = await userModel.getAllUsersWithRoles();
+        const users = await userModel.getAllUsers();
         return {
             success: true,
             data: users,
@@ -81,25 +81,11 @@ const createUser = async (userData) => {
 
         const user = await userModel.createUser(newUserData);
 
-        // ── Bug #1 fix: asignar el rol en user_roles ──────────────────────────
-        const roleId = userData.role_id ? parseInt(userData.role_id) : null;
-        if (roleId && !isNaN(roleId)) {
-            await userModel.assignRoleToUser(user.id, roleId);
-        }
-        // ─────────────────────────────────────────────────────────────────────
-
-        const roles = await userModel.getUserRoles(user.id);
-        const primaryRole = roles[0]?.name || null;
-
         delete user.password_hash;
 
         return {
             success: true,
-            data: {
-                ...user,
-                role: primaryRole,
-                roles
-            },
+            data: user,
             message: 'User created successfully'
         };
     } catch (error) {
@@ -110,7 +96,6 @@ const createUser = async (userData) => {
         };
     }
 };
-
 
 const updateUser = async (userId, userData) => {
     try {
