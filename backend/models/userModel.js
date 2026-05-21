@@ -11,6 +11,36 @@ const getAllUsers = async () => {
     return result.rows;
 };
 
+const getAllUsersWithRoles = async () => {
+    const query = `
+        SELECT
+            u.id,
+            u.first_name,
+            u.last_name,
+            u.email,
+            u.phone,
+            u.profile_image_url,
+            u.country,
+            u.city,
+            u.address,
+            u.status,
+            u.created_at,
+            COALESCE(
+                json_agg(
+                    json_build_object('id', r.id, 'name', r.name)
+                ) FILTER (WHERE r.id IS NOT NULL),
+                '[]'::json
+            ) AS roles
+        FROM users u
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN roles r      ON ur.role_id = r.id
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+    `;
+    const result = await pool.query(query);
+    return result.rows;
+};
+
 const getUserById = async (userId) => {
     const query = `
         SELECT id, first_name, last_name, email, phone, profile_image_url, 
@@ -94,6 +124,7 @@ const assignRoleToUser = async (userId, roleId) => {
 
 module.exports = {
     getAllUsers,
+    getAllUsersWithRoles,
     getUserById,
     getUserByEmail,
     createUser,
