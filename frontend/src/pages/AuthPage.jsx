@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import AuthHero from "@/components/Organisms/AuthHero";
-import AuthFormPanel from "@/components/Organisms/AuthFormPanel";
+import AuthHero from "@/components/auth/AuthHero";
+import AuthFormPanel from "@/components/auth/AuthFormPanel";
 import { useAuth } from "@/context/AuthContext";
 import {
   AUTH_ROLES,
@@ -13,18 +13,19 @@ const customerFormDefaults = {
   first_name: "",
   last_name: "",
   phone: "",
-  country: "",
-  city: "",
+  country: "Bolivia",
+  city: "Santa Cruz",
   address: "",
   email: "",
   password: "",
+  confirmPassword: "",
   rememberMe: false,
 };
 
 const sanitizeRegisterPayload = (formData) => ({
   first_name: formData.first_name.trim(),
   last_name: formData.last_name.trim(),
-  phone: formData.phone.trim(),
+  phone: `+591${formData.phone.trim()}`,
   country: formData.country.trim(),
   city: formData.city.trim(),
   address: formData.address.trim(),
@@ -45,15 +46,39 @@ const validateForm = (formMode, formData) => {
       errors.first_name = "El nombre es obligatorio.";
     if (!formData.last_name.trim())
       errors.last_name = "El apellido es obligatorio.";
-    if (!formData.phone.trim()) errors.phone = "El teléfono es obligatorio.";
+    if (!formData.phone.trim()) {
+      errors.phone = "El teléfono es obligatorio.";
+    } else if (!/^\d{8}$/.test(formData.phone.trim())) {
+      errors.phone = "El teléfono debe tener exactamente 8 dígitos.";
+    }
     if (!formData.country.trim()) errors.country = "El país es obligatorio.";
     if (!formData.city.trim()) errors.city = "La ciudad es obligatoria.";
     if (!formData.address.trim())
       errors.address = "La dirección es obligatoria.";
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = "La confirmación de contraseña es obligatoria.";
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Las contraseñas no coinciden.";
+    }
   }
 
-  if (!formData.email.trim()) errors.email = "El correo es obligatorio.";
-  if (!formData.password) errors.password = "La contraseña es obligatoria.";
+  const emailValue = formData.email.trim().toLowerCase();
+  if (!emailValue) {
+    errors.email = "El correo es obligatorio.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+    errors.email = "El formato de correo no es válido.";
+  } else if (formMode === "register") {
+    const domain = emailValue.split("@")[1];
+    if (domain !== "gmail.com" && domain !== "googlemail.com") {
+      errors.email = "El correo debe ser de Gmail (@gmail.com o @googlemail.com).";
+    }
+  }
+
+  if (!formData.password) {
+    errors.password = "La contraseña es obligatoria.";
+  } else if (formData.password.length < 6) {
+    errors.password = "La contraseña debe tener al menos 6 caracteres.";
+  }
 
   return errors;
 };
@@ -83,7 +108,7 @@ function AuthPage() {
   const [formMessage, setFormMessage] = useState("");
 
   const isVendorMode =
-    accessRole === AUTH_ROLES.VENDOR || accessRole === AUTH_ROLES.SUPER_ADMIN;
+    accessRole === AUTH_ROLES.VENDOR || accessRole === AUTH_ROLES.ADMINISTRATOR;
 
   useEffect(() => {
     if (isHydrated) {
@@ -104,9 +129,14 @@ function AuthPage() {
   const handleFieldChange = (event) => {
     const { name, type, value, checked } = event.target;
 
+    let finalValue = type === "checkbox" ? checked : value;
+    if (name === "phone") {
+      finalValue = value.replace(/\D/g, "").slice(0, 8);
+    }
+
     setFormData((current) => ({
       ...current,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: finalValue,
     }));
 
     if (formErrors[name]) {
@@ -182,13 +212,12 @@ function AuthPage() {
       );
       setFormData(customerFormDefaults);
     } catch {
-      // The AuthContext already stores the error; keep the local state calm.
     }
   };
 
   return (
     <main
-      data-mode={accessRole}
+      data-mode={accessRole === AUTH_ROLES.ADMINISTRATOR ? AUTH_ROLES.VENDOR : accessRole}
       className="min-h-screen overflow-hidden theme-transition"
     >
       <div
@@ -210,8 +239,8 @@ function AuthPage() {
           <div
             className={
               isVendorMode
-                ? "relative border-b border-white/8 lg:border-b-0 lg:border-r lg:border-white/8"
-                : "relative border-b border-white/12 lg:border-b-0 lg:border-r lg:border-white/12"
+                ? "relative border-b border-white/8 lg:border-b-0 lg:border-r lg:border-white/8 min-w-0 overflow-hidden"
+                : "relative border-b border-white/12 lg:border-b-0 lg:border-r lg:border-white/12 min-w-0 overflow-hidden"
             }
           >
             <AuthHero
@@ -219,7 +248,6 @@ function AuthPage() {
               isVendorMode={isVendorMode}
               onToggleVendorMode={handleModeChange}
               onSelectRole={handleRoleChange}
-              onSelectDeliveryRole={() => handleRoleChange(AUTH_ROLES.DELIVERY)}
             />
           </div>
 
@@ -250,13 +278,7 @@ function AuthPage() {
           </div>
         </div>
 
-        {isAuthenticated && user ? (
-          <div className="absolute bottom-4 left-1/2 z-10 w-[min(92vw,960px)] -translate-x-1/2 rounded-[1.25rem] border border-white/10 bg-[rgba(8,15,28,0.62)] px-5 py-4 text-sm text-white/82 shadow-[0_18px_60px_-28px_rgba(15,23,42,0.8)] backdrop-blur-xl">
-            <span className="font-semibold text-white">Sesión activa:</span>{" "}
-            {user.displayName || user.email} · Rol: {role || "sin definir"} ·
-            Dashboard: {dashboardPath}
-          </div>
-        ) : null}
+
       </div>
     </main>
   );

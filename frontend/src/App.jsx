@@ -1,5 +1,5 @@
 import AuthPage from "./pages/AuthPage";
-import DashboardPage from "./pages/DashboardPage";
+import RoleDispatcher from "./pages/RoleDispatcher";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
     return <AuthPage />;
   }
 
-  return isAuthenticated ? <DashboardPage /> : <AuthPage />;
+  return isAuthenticated ? <RoleDispatcher /> : <AuthPage />;
 }
 
 export default App;

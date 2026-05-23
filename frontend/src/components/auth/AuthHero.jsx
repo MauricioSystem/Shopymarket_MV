@@ -1,4 +1,4 @@
-import BrandMark from "@/components/Atoms/BrandMark";
+import BrandMark from "@/components/ui/BrandMark";
 import { AUTH_ROLES } from "@/utils/authRoles";
 
 const heroCopy = {
@@ -57,11 +57,7 @@ function AuthHero({
     : isDeliveryMode
       ? "bg-[radial-gradient(circle_at_top_left,rgba(72,42,20,0.94),transparent_22%),radial-gradient(circle_at_top_right,rgba(245,211,103,0.22),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(201,147,90,0.22),transparent_30%),linear-gradient(155deg,rgba(39,23,12,0.98),rgba(109,74,43,0.94))]"
       : "bg-[radial-gradient(circle_at_top_left,rgba(245,211,103,0.28),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(91,141,255,0.12),transparent_28%),linear-gradient(155deg,rgba(255,252,244,0.98),rgba(248,244,233,0.95))]";
-  const pillClass = isVendorMode
-    ? "border-white/10 bg-white/5 text-white/78 hover:bg-white/10"
-    : isDeliveryMode
-      ? "border-[rgba(201,147,90,0.34)] bg-[rgba(110,76,42,0.84)] text-[#f7d98d] hover:bg-[rgba(122,82,44,0.96)]"
-      : "border-[rgba(201,150,12,0.18)] bg-[rgba(245,211,103,0.13)] text-[#1a1200] hover:bg-[rgba(245,211,103,0.2)]";
+
   const customerTextClass = isDeliveryMode
     ? "text-[#2a1a0d]"
     : "text-[#1a1200]";
@@ -107,45 +103,12 @@ function AuthHero({
         }
       />
 
-      <div className="relative flex flex-col gap-5">
+      <div className="relative flex flex-col gap-5 min-w-0 overflow-hidden">
         <div className="max-w-2xl">
           <BrandMark
             mode={themeLabel}
             tone={isVendorMode || isDeliveryMode ? "light" : "dark"}
           />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => onToggleVendorMode(false)}
-            className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] transition-all duration-300 ${pillClass}`}
-          >
-            <span className="h-2 w-2 rounded-full bg-[var(--primary)] shadow-[0_0_0_6px_rgba(245,211,103,0.15)]" />
-            Cliente
-          </button>
-          <button
-            type="button"
-            onClick={() => onToggleVendorMode(true)}
-            className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] transition-all duration-300 ${pillClass}`}
-          >
-            <span
-              className={
-                isVendorMode
-                  ? "h-2 w-2 rounded-full bg-white/70 shadow-[0_0_0_6px_rgba(255,255,255,0.08)]"
-                  : "h-2 w-2 rounded-full bg-[var(--primary)] shadow-[0_0_0_6px_rgba(245,211,103,0.15)]"
-              }
-            />
-            Vendedor
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelectRole?.(AUTH_ROLES.DELIVERY)}
-            className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] transition-all duration-300 ${isDeliveryMode ? "border-[rgba(140,90,43,0.2)] bg-[rgba(140,90,43,0.14)] text-[#2a1a0d]" : "border-[rgba(140,90,43,0.16)] bg-[rgba(140,90,43,0.08)] text-[#6f5a42] hover:bg-[rgba(140,90,43,0.12)]"}`}
-          >
-            <span className="h-2 w-2 rounded-full bg-[var(--primary)] shadow-[0_0_0_6px_rgba(140,90,43,0.12)]" />
-            Delivery
-          </button>
         </div>
 
         <div className="max-w-2xl space-y-4">
@@ -182,22 +145,33 @@ function AuthHero({
           </p>
         </div>
 
-        <div className="grid max-w-2xl gap-3 sm:grid-cols-3">
-          {theme.highlights.map((item, index) => (
-            <div
-              key={item}
-              className={
-                isVendorMode
-                  ? "rounded-[1.25rem] border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/88 backdrop-blur-md"
-                  : isDeliveryMode
-                    ? `rounded-[1.25rem] border ${index === 1 ? "border-[rgba(247,217,141,0.82)]" : "border-[rgba(201,147,90,0.32)]"} bg-[rgba(110,76,42,0.76)] px-4 py-3 text-sm font-medium text-[#f7d98d] backdrop-blur-md`
-                    : "rounded-[1.25rem] border border-[rgba(201,150,12,0.16)] bg-[rgba(255,255,255,0.7)] px-4 py-3 text-sm font-medium text-[#1a1200] backdrop-blur-md"
-              }
-              style={{ animationDelay: `${index * 90}ms` }}
-            >
-              {item}
-            </div>
-          ))}
+        <div className="relative w-full overflow-hidden py-4 mask-gradient-x">
+          <div className="animate-marquee-left flex gap-5">
+            {[1, 2, 3, 4, 5].map((num) => (
+              <div
+                key={`carousel-1-${num}`}
+                className="flex-shrink-0 w-[240px] h-[150px] rounded-[1.25rem] overflow-hidden border border-black/5 dark:border-white/10 shadow-lg"
+              >
+                <img
+                  src={`/carousel/img${num}.png`}
+                  alt={`Carousel slide ${num}`}
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                />
+              </div>
+            ))}
+            {[1, 2, 3, 4, 5].map((num) => (
+              <div
+                key={`carousel-2-${num}`}
+                className="flex-shrink-0 w-[240px] h-[150px] rounded-[1.25rem] overflow-hidden border border-black/5 dark:border-white/10 shadow-lg"
+              >
+                <img
+                  src={`/carousel/img${num}.png`}
+                  alt={`Carousel slide ${num}`}
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

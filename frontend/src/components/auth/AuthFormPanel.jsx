@@ -1,8 +1,8 @@
-import Button from "@/components/Atoms/Button";
-import Input from "@/components/Atoms/Input";
-import ModePill from "@/components/Atoms/ModePill";
-import AuthField from "@/components/Molecules/AuthField";
-import ModeSwitchLink from "@/components/Molecules/ModeSwitchLink";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+
+import AuthField from "@/components/auth/AuthField";
+import ModeSwitchLink from "@/components/auth/ModeSwitchLink";
 import { cx } from "@/utils/cx";
 import { AUTH_ROLES } from "@/utils/authRoles";
 
@@ -10,31 +10,45 @@ const registerFields = [
   {
     name: "first_name",
     label: "Nombre",
-    placeholder: "Juan",
+    placeholder: "",
     autoComplete: "given-name",
   },
   {
     name: "last_name",
     label: "Apellido",
-    placeholder: "Perez",
+    placeholder: "",
     autoComplete: "family-name",
   },
   {
     name: "phone",
     label: "Teléfono",
-    placeholder: "+591 00000000",
+    placeholder: "",
     autoComplete: "tel",
+    prefix: "+591",
+    maxLength: 8,
   },
   {
     name: "country",
     label: "País",
-    placeholder: "Bolivia",
+    type: "select",
+    options: ["Bolivia"],
     autoComplete: "country-name",
   },
   {
     name: "city",
     label: "Ciudad",
-    placeholder: "Santa Cruz",
+    type: "select",
+    options: [
+      "Santa Cruz",
+      "Tarija",
+      "Beni",
+      "Chuquisaca",
+      "Cochabamba",
+      "La Paz",
+      "Oruro",
+      "Pando",
+      "Potosí",
+    ],
     autoComplete: "address-level2",
   },
   {
@@ -61,8 +75,8 @@ function AuthFormPanel({
   onSubmit,
 }) {
   const isDeliveryMode = accessRole === AUTH_ROLES.DELIVERY;
-  const isSuperAdminMode = accessRole === AUTH_ROLES.SUPER_ADMIN;
-  const useDarkShell = isVendorMode || isSuperAdminMode;
+  const isAdministratorMode = accessRole === AUTH_ROLES.ADMINISTRATOR;
+  const useDarkShell = isVendorMode || isAdministratorMode;
 
   const panelShellClass = useDarkShell
     ? "border-white/10 bg-[rgba(8,15,28,0.58)] shadow-[0_30px_100px_-32px_rgba(15,23,42,0.72)]"
@@ -93,38 +107,6 @@ function AuthFormPanel({
     : isDeliveryMode
       ? "border-[rgba(140,90,43,0.16)]"
       : "border-[rgba(201,150,12,0.14)]";
-
-  const chipBaseClass =
-    "rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] transition-all duration-300";
-
-  const roleChipClass = (role) => {
-    const active = accessRole === role;
-
-    if (role === AUTH_ROLES.DELIVERY) {
-      return cx(
-        chipBaseClass,
-        active
-          ? "border-[rgba(247,217,141,0.72)] bg-[rgba(110,76,42,0.92)] text-[#f7d98d]"
-          : "border-[rgba(201,147,90,0.22)] bg-[rgba(110,76,42,0.34)] text-[#f7d98d]/78 hover:bg-[rgba(110,76,42,0.52)]",
-      );
-    }
-
-    if (role === AUTH_ROLES.VENDOR) {
-      return cx(
-        chipBaseClass,
-        active
-          ? "border-white/10 bg-white/10 text-white"
-          : "border-white/10 bg-white/5 text-white/72 hover:bg-white/10",
-      );
-    }
-
-    return cx(
-      chipBaseClass,
-      active
-        ? "border-[rgba(245,211,103,0.18)] bg-[rgba(245,211,103,0.16)] text-[#1a1200]"
-        : "border-[rgba(201,150,12,0.16)] bg-[rgba(245,211,103,0.08)] text-[#6b5b3a] hover:bg-[rgba(245,211,103,0.14)]",
-    );
-  };
 
   const deliveryLinkText = "¿Quieres registrarte como delivery? Hazlo aquí.";
   const returnToCustomerText =
@@ -166,66 +148,9 @@ function AuthFormPanel({
         >
           <div className="mb-5 flex items-start justify-between gap-4">
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <ModePill
-                  active
-                  className={
-                    isVendorMode
-                      ? ""
-                      : isDeliveryMode
-                        ? "border-[rgba(247,217,141,0.72)] bg-[rgba(110,76,42,0.92)] text-[#f7d98d]"
-                        : "border-[rgba(245,211,103,0.18)] bg-[rgba(245,211,103,0.15)] text-[#1a1200]"
-                  }
-                >
-                  {isRegisterMode ? "Registro" : "Login"}
-                </ModePill>
-                <ModePill
-                  active={isVendorMode}
-                  className={
-                    isVendorMode
-                      ? "border-white/10 bg-white/5 text-white/75"
-                      : isDeliveryMode
-                        ? "border-[rgba(247,217,141,0.72)] bg-[rgba(110,76,42,0.94)] text-[#f7d98d]"
-                        : "border-[rgba(201,150,12,0.16)] bg-[rgba(245,211,103,0.1)] text-[#624f1f]"
-                  }
-                >
-                  {isVendorMode
-                    ? "Seller View"
-                    : isDeliveryMode
-                      ? "Delivery View"
-                      : "Buyer View"}
-                </ModePill>
-              </div>
-
-              {roleOptions.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {roleOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => onSelectRole?.(option.value)}
-                      className={roleChipClass(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
               <div>
-                <p
-                  className={`text-xs font-bold uppercase tracking-[0.45em] ${labelTextClass}`}
-                >
-                  {isSuperAdminMode
-                    ? "Modo Super Admin"
-                    : isVendorMode
-                      ? "Modo Vendedor"
-                      : isDeliveryMode
-                        ? "Modo Repartidor"
-                        : "Modo Cliente"}
-                </p>
                 <h3
-                  className={`mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl ${titleTextClass}`}
+                  className={`font-display text-2xl font-bold tracking-tight sm:text-3xl ${titleTextClass}`}
                 >
                   {isRegisterMode ? "Crea tu cuenta" : "Inicia sesión"}
                 </h3>
@@ -316,11 +241,15 @@ function AuthFormPanel({
                     key={field.name}
                     label={field.label}
                     name={field.name}
+                    type={field.type}
                     value={formData[field.name] || ""}
                     onChange={onFieldChange}
                     placeholder={field.placeholder}
                     autoComplete={field.autoComplete}
                     error={formErrors[field.name]}
+                    prefix={field.prefix}
+                    maxLength={field.maxLength}
+                    options={field.options}
                   />
                 ))}
               </div>
@@ -333,7 +262,7 @@ function AuthFormPanel({
                 type="email"
                 value={formData.email || ""}
                 onChange={onFieldChange}
-                placeholder="correo@email.com"
+                placeholder="correo@gmail.com"
                 autoComplete="email"
                 error={formErrors.email}
               />
@@ -355,24 +284,20 @@ function AuthFormPanel({
                     : undefined
                 }
               />
-            </div>
 
-            {!isRegisterMode ? (
-              <Input
-                label="Recordarme"
-                type="checkbox"
-                name="rememberMe"
-                checked={Boolean(formData.rememberMe)}
-                onChange={onFieldChange}
-                className={
-                  isVendorMode
-                    ? "h-4 w-4 rounded border-white/15 bg-white/8"
-                    : isDeliveryMode
-                      ? "h-4 w-4 rounded border-[rgba(247,217,141,0.34)] bg-[rgba(110,76,42,0.24)]"
-                      : "h-4 w-4 rounded border-[rgba(201,150,12,0.18)] bg-white"
-                }
-              />
-            ) : null}
+              {isRegisterMode ? (
+                <AuthField
+                  label="Confirmar contraseña"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword || ""}
+                  onChange={onFieldChange}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  error={formErrors.confirmPassword}
+                />
+              ) : null}
+            </div>
 
             <Button
               type="submit"
@@ -381,7 +306,7 @@ function AuthFormPanel({
             >
               {isRegisterMode
                 ? "Crear cuenta y continuar"
-                : "Entrar a Shopy Market"}
+                : "Entrar a ShopyMarket"}
             </Button>
           </form>
 
@@ -389,15 +314,23 @@ function AuthFormPanel({
             className={`mt-4 border-t pt-4 text-sm ${dividerClass} ${mutedTextClass}`}
           >
             {isDeliveryMode ? (
-              <ModeSwitchLink
-                onClick={() => {
-                  onSelectRole?.(AUTH_ROLES.CUSTOMER);
-                  onToggleMode(false);
-                }}
-                className="block text-[#f7d98d] decoration-[#f7d98d]"
-              >
-                {returnToCustomerText}
-              </ModeSwitchLink>
+              <>
+                <ModeSwitchLink
+                  onClick={() => {
+                    onSelectRole?.(AUTH_ROLES.CUSTOMER);
+                    onToggleMode(false);
+                  }}
+                  className="block text-[#f7d98d] decoration-[#f7d98d]"
+                >
+                  {returnToCustomerText}
+                </ModeSwitchLink>
+                <ModeSwitchLink
+                  onClick={onToggleVendorMode}
+                  className="mt-3 block"
+                >
+                  ¿Quieres gestionar tu negocio? Inicia sesión aquí.
+                </ModeSwitchLink>
+              </>
             ) : isVendorMode ? (
               <>
                 <ModeSwitchLink onClick={onToggleVendorMode}>

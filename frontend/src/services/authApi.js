@@ -1,3 +1,5 @@
+import { normalizeFrontendRole } from "@/utils/authRoles";
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 const parseEndpointList = (value, fallback) => {
@@ -106,40 +108,21 @@ async function requestWithFallback(endpoints, payload) {
         throw lastNetworkError;
     }
 
-    throw new Error('No se encontró un endpoint de autenticación válido.');
+    throw new Error('Correo o contraseña incorrectos.');
 }
 
 const normalizeRole = (value) => {
     if (!value) {
         return null;
     }
-
     const raw = Array.isArray(value) ? value[0] : value;
-    const normalized = String(raw).trim().toLowerCase().replace(/\s+/g, '_');
-
-    // Mapeo bidireccional: nombres de BD → nombres del frontend y viceversa
-    const aliases = {
-        // BD → frontend
-        admin: 'vendor',           // BD: admin (vendedor) → frontend: vendor
-        cliente: 'customer',       // BD: cliente → frontend: customer
-        repartidor: 'delivery',    // BD: repartidor → frontend: delivery
-        // frontend → BD (por si acaso llegan del client)
-        seller: 'vendor',
-        buyer: 'customer',
-        courier: 'delivery',
-        superadmin: 'super_admin',
-    };
-
-    return aliases[normalized] || normalized;
+    return normalizeFrontendRole(raw);
 };
 
 const pickUserObject = (payload) => {
     if (!payload || typeof payload !== 'object') {
         return null;
     }
-    // Estructura nueva del backend: data.user (login) o data directamente sin user (register)
-    // Register retorna: { ...user, token, role, roles }
-    // Login retorna: { token, user: {...}, role }
     return payload.user || payload.account || payload.profile
         || payload.data?.user || payload.data?.account || payload.data?.profile
         || payload.data || null;
@@ -154,16 +137,16 @@ const normalizeAuthPayload = (envelope) => {
         rawPayload?.accessToken,
         rawPayload?.jwt,
         rawPayload?.access_token,
-        rawPayload?.data?.token,       // login: data.token
-        rawPayload?.data?.user?.token, // por si anida más
+        rawPayload?.data?.token,      
+        rawPayload?.data?.user?.token,
         rawPayload?.data?.accessToken,
         rawPayload?.result?.token,
-        user?.token,                   // register: el token viene dentro del objeto user/data
+        user?.token,    
     ].find(Boolean);
 
     const roleSource = [
-        rawPayload?.data?.role,        // login: data.role
-        rawPayload?.data?.user?.role,  // login: data.user.role
+        rawPayload?.data?.role,  
+        rawPayload?.data?.user?.role,
         user?.role,
         user?.rol,
         rawPayload?.role,

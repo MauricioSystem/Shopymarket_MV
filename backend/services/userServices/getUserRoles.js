@@ -1,5 +1,5 @@
 const userModel = require('../../models/userModel');
-const { validateUserId } = require('../../validators');
+const { validateUserId } = require('../validators');
 
 const getUserRoles = async (userId) => {
     try {

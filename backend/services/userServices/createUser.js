@@ -4,7 +4,7 @@ const {
     validatePhone,
     validateEmail,
     validatePassword,
-} = require('../../validators');
+} = require('../validators');
 
 const createUser = async (userData) => {
     try {

@@ -32,3 +32,7 @@ out/
 coverage/
 .temp/
 .cache/
+
+# Uploads / Archivos subidos
+backend/uploads/**/*
+!backend/uploads/**/.gitkeep

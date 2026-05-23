@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   loginRequest,
   registerRequest,
-  normalizeRole,
 } from "@/services/authApi";
 import {
   AUTH_ROLES,
@@ -48,7 +47,6 @@ const safeWriteStorage = (value) => {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
   } catch {
-    // Ignore persistence errors so auth still works in restrictive browsers.
   }
 };
 
@@ -60,7 +58,6 @@ const safeClearStorage = () => {
   try {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Ignore storage cleanup errors.
   }
 };
 
@@ -85,7 +82,6 @@ const safeWriteRegistry = (value) => {
   try {
     window.localStorage.setItem(REGISTRY_KEY, JSON.stringify(value));
   } catch {
-    // Ignore registry persistence errors.
   }
 };
 
@@ -108,7 +104,7 @@ const normalizeStoredSession = (storedSession) => {
     auth: auth
       ? {
           ...auth,
-          role: normalizeFrontendRole(auth.role) || normalizeRole(auth.role),
+          role: normalizeFrontendRole(auth.role),
         }
       : null,
     actionContext,
@@ -119,7 +115,7 @@ const buildPersistedSession = (auth, actionContext) => ({
   auth: auth
     ? {
         ...auth,
-        role: normalizeFrontendRole(auth.role) || normalizeRole(auth.role),
+        role: normalizeFrontendRole(auth.role),
       }
     : null,
   actionContext: {
@@ -168,6 +164,7 @@ export function AuthProvider({ children }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState(null);
   const [registry, setRegistry] = useState(() => safeReadRegistry());
+  const [currentView, setCurrentView] = useState("dashboard");
 
   useEffect(() => {
     setIsHydrated(true);
@@ -193,7 +190,7 @@ export function AuthProvider({ children }) {
       ? {
           ...auth,
           token: auth.token || synthesizeToken(),
-          role: normalizeFrontendRole(auth.role) || normalizeRole(auth.role),
+          role: normalizeFrontendRole(auth.role),
         }
       : null;
 
@@ -289,8 +286,25 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setSession(defaultState);
+    setCurrentView("dashboard");
     setError(null);
     safeClearStorage();
+  };
+
+  const updateSessionUser = (updatedUser) => {
+    setSession((current) => {
+      if (!current.auth) return current;
+      return {
+        ...current,
+        auth: {
+          ...current.auth,
+          user: {
+            ...current.auth.user,
+            ...updatedUser,
+          },
+        },
+      };
+    });
   };
 
   const updateActionContext = (actionContext) => {
@@ -322,6 +336,9 @@ export function AuthProvider({ children }) {
       isHydrated,
       loading,
       error,
+      currentView,
+      setCurrentView,
+      updateSessionUser,
       dashboardPath: resolveDashboardPath(
         session.auth?.role || session.actionContext?.role,
       ),
@@ -331,10 +348,8 @@ export function AuthProvider({ children }) {
       updateActionContext,
       clearError: () => setError(null),
       setActionContext: updateActionContext,
-      getDashboardPath: () =>
-        resolveDashboardPath(session.auth?.role || session.actionContext?.role),
     };
-  }, [session, isHydrated, loading, error]);
+  }, [session, isHydrated, loading, error, currentView]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

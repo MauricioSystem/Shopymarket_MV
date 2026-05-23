@@ -13,7 +13,7 @@ async function apiFetch(path, { token, method = 'GET', body } = {}) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-        const message = data?.message || data?.error || `Error ${response.status}`;
+        const message = data?.error || data?.message || `Error ${response.status}`;
         const err = new Error(message);
         err.status = response.status;
         err.payload = data;
@@ -38,3 +38,41 @@ export async function updateUserProfile(token, userId, userData) {
         body: userData,
     });
 }
+
+export async function createUser(token, userData) {
+    return apiFetch('/api/users', {
+        token,
+        method: 'POST',
+        body: userData,
+    });
+}
+
+export async function deleteUser(token, userId) {
+    return apiFetch(`/api/users/${userId}`, {
+        token,
+        method: 'DELETE',
+    });
+}
+
+export async function updateUserProfileMultipart(token, userId, formData) {
+    const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        const message = data?.error || data?.message || `Error ${response.status}`;
+        const err = new Error(message);
+        err.status = response.status;
+        err.payload = data;
+        throw err;
+    }
+
+    return data;
+}
+

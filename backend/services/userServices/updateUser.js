@@ -5,7 +5,7 @@ const {
     validateEmail,
     validatePassword,
     validateUserId,
-} = require('../../validators');
+} = require('../validators');
 
 const updateUser = async (userId, userData) => {
     try {
