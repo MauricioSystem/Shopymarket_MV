@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
 import BrandMark from "@/components/ui/BrandMark";
 import Button from "@/components/ui/Button";
 import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
@@ -13,6 +14,7 @@ function getInitials(user) {
 
 export default function VendorDashboard() {
   const { user, logout, role, setCurrentView } = useAuth();
+  const [setupMode, setSetupMode] = useState(null);
   const roleLabel = getRoleLabel(role);
 
   const theme = {
@@ -60,7 +62,15 @@ export default function VendorDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-white">
+          <div className="flex flex-wrap items-center gap-3 text-white">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setCurrentView("vendor-panel")}
+              className="rounded-[0.85rem] px-4 py-2 text-sm"
+            >
+              Administrar recursos
+            </Button>
             <div
               onClick={() => setCurrentView("profile")}
               className="hidden flex-col items-end sm:flex cursor-pointer group select-none"
@@ -108,8 +118,80 @@ export default function VendorDashboard() {
             Bienvenido de vuelta, {getDisplayName(user)}
           </h1>
           <p className={`mt-3 max-w-2xl text-sm leading-6 ${theme.mutedText}`}>
-            Tu panel de vendedor está listo. Administra tu catálogo, ventas y pedidos desde un entorno seguro y profesional.
+            Tu panel de vendedor está listo. Comienza por crear tu tienda o tu primer servicio para poder vender.
           </p>
+        </div>
+
+        <div className="mb-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <section className={`rounded-3xl border border-white/10 bg-[rgba(8,15,28,0.4)] p-8 shadow-xl ${theme.cardClass}`}>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#f5d367]">Primer paso</p>
+              <h2 className="mt-4 text-2xl font-semibold text-white">¿Quieres crear tu tienda o tu servicio?</h2>
+              <p className="mt-3 text-sm leading-6 text-white/75">
+                Como vendedor, lo primero es definir tu espacio de ventas. Elige si prefieres empezar con una tienda o con un servicio.
+              </p>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => setSetupMode('store')}
+                className="w-full sm:w-auto"
+              >
+                Crear tienda
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setSetupMode('service')}
+                className="w-full sm:w-auto"
+              >
+                Crear servicio
+              </Button>
+            </div>
+
+            {setupMode ? (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-black/10 p-6 text-sm text-white/80">
+                <p className="font-semibold text-white">Progreso:</p>
+                <p className="mt-3">
+                  Has elegido <span className="font-semibold text-white">{setupMode === 'store' ? 'crear una tienda' : 'crear un servicio'}</span>.
+                </p>
+                <p className="mt-3">
+                  Por ahora, puedes usar el backend para registrar tu recurso. Si quieres, también puedes recargar esta página cuando termines.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.25em] text-white/70">
+                    {setupMode === 'store' ? 'Tienda' : 'Servicio'} seleccionada
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSetupMode(null)}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Cambiar opción
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={`rounded-3xl border border-white/10 bg-[rgba(8,15,28,0.3)] p-6 shadow-xl ${theme.cardClass}`}>
+            <h3 className="text-lg font-semibold text-white">Siguiente paso</h3>
+            <p className="mt-3 text-sm leading-6 text-white/75">
+              Después de crear tu tienda o servicio, podrás empezar a subir productos, recibir pedidos y gestionar tu catálogo desde el backend.
+            </p>
+            <div className="mt-6 space-y-4 text-sm text-white/80">
+              <div>
+                <p className="font-semibold text-white">Sugerencia</p>
+                <p className="mt-1">Crea primero tu tienda si quieres vender varios productos. Crea un servicio si ofreces trabajo puntual.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-white">Recursos</p>
+                <p className="mt-1">Usa Postman o tu cliente para llamar a <code className="rounded bg-slate-900 px-1 py-0.5">POST /api/stores</code> o <code className="rounded bg-slate-900 px-1 py-0.5">POST /api/services</code>.</p>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-3">

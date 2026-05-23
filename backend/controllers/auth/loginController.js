@@ -42,6 +42,17 @@ const login = async (req, res) => {
             });
         }
 
+        if (user.status !== 'active') {
+            const statusMessage =
+                user.status === 'deleted'
+                    ? 'Cuenta eliminada. Usa el formulario de reactivación para recuperar tu cuenta con el mismo correo.'
+                    : 'Cuenta desactivada. No es posible iniciar sesión.';
+            return res.status(403).json({
+                success: false,
+                message: statusMessage
+            });
+        }
+
         if (migratedLegacyHash) {
             const newHash = await bcrypt.hash(password, 10);
             await userModel.updatePasswordHash(user.id, newHash);

@@ -158,6 +158,18 @@ const deleteUser = async (userId) => {
     return result.rows[0] || null;
 };
 
+const reactivateUser = async (userId) => {
+    const query = `
+        UPDATE users
+        SET status = 'active'
+        WHERE id = $1
+        RETURNING id, first_name, last_name, email, phone, profile_image_url, 
+                  country, city, address, status, created_at
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows[0] || null;
+};
+
 const getUserRoles = async (userId) => {
     const query = `
         SELECT r.id, r.name, r.description
@@ -187,6 +199,7 @@ module.exports = {
     updateUser,
     updatePasswordHash,
     deleteUser,
+    reactivateUser,
     getUserRoles,
     assignRoleToUser
 };

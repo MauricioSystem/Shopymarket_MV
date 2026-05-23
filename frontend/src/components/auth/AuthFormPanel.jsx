@@ -62,7 +62,7 @@ const registerFields = [
 function AuthFormPanel({
   accessRole,
   isVendorMode,
-  isRegisterMode,
+  formMode,
   formData,
   formErrors,
   formMessage,
@@ -74,6 +74,8 @@ function AuthFormPanel({
   roleOptions = [],
   onSubmit,
 }) {
+  const isRegisterMode = formMode === "register";
+  const isReactivateMode = formMode === "reactivate";
   const isDeliveryMode = accessRole === AUTH_ROLES.DELIVERY;
   const isAdministratorMode = accessRole === AUTH_ROLES.ADMINISTRATOR;
   const useDarkShell = isVendorMode || isAdministratorMode;
@@ -152,16 +154,22 @@ function AuthFormPanel({
                 <h3
                   className={`font-display text-2xl font-bold tracking-tight sm:text-3xl ${titleTextClass}`}
                 >
-                  {isRegisterMode ? "Crea tu cuenta" : "Inicia sesión"}
+                  {isRegisterMode
+                    ? "Crea tu cuenta"
+                    : isReactivateMode
+                      ? "Reactiva tu cuenta"
+                      : "Inicia sesión"}
                 </h3>
                 <p
                   className={`mt-3 max-w-lg text-sm leading-7 sm:text-[0.95rem] ${mutedTextClass}`}
                 >
-                  {isVendorMode
-                    ? "Accede a tu panel para administrar catálogo, ventas y pedidos con una estética más corporativa."
-                    : isDeliveryMode
-                      ? "Entra a tu experiencia de reparto con acceso ágil y una interfaz más cálida y clara."
-                      : "Entra a tu experiencia de compra con un acceso ágil y una interfaz más luminosa."}
+                  {isReactivateMode
+                    ? "Recupera tu cuenta eliminada con el mismo correo y contraseña."
+                    : isVendorMode
+                      ? "Accede a tu panel para administrar catálogo, ventas y pedidos con una estética más corporativa."
+                      : isDeliveryMode
+                        ? "Entra a tu experiencia de reparto con acceso ágil y una interfaz más cálida y clara."
+                        : "Entra a tu experiencia de compra con un acceso ágil y una interfaz más luminosa."}
                 </p>
               </div>
             </div>
@@ -178,10 +186,10 @@ function AuthFormPanel({
           >
             <button
               type="button"
-              onClick={() => onToggleMode(false)}
+              onClick={() => onToggleMode('login')}
               className={cx(
                 "flex-1 rounded-[1rem] px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-[0.95rem]",
-                !isRegisterMode
+                !isRegisterMode && !isReactivateMode
                   ? isVendorMode
                     ? "bg-white text-[#111827] shadow-[0_12px_30px_-18px_rgba(255,255,255,0.8)]"
                     : isDeliveryMode
@@ -199,7 +207,7 @@ function AuthFormPanel({
 
             <button
               type="button"
-              onClick={() => onToggleMode(true)}
+              onClick={() => onToggleMode('register')}
               className={cx(
                 "flex-1 rounded-[1rem] px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-[0.95rem]",
                 isRegisterMode
@@ -306,7 +314,9 @@ function AuthFormPanel({
             >
               {isRegisterMode
                 ? "Crear cuenta y continuar"
-                : "Entrar a ShopyMarket"}
+                : isReactivateMode
+                  ? "Reactivar cuenta"
+                  : "Entrar a ShopyMarket"}
             </Button>
           </form>
 
@@ -318,7 +328,7 @@ function AuthFormPanel({
                 <ModeSwitchLink
                   onClick={() => {
                     onSelectRole?.(AUTH_ROLES.CUSTOMER);
-                    onToggleMode(false);
+                    onToggleMode('login');
                   }}
                   className="block text-[#f7d98d] decoration-[#f7d98d]"
                 >
@@ -339,7 +349,7 @@ function AuthFormPanel({
                 <ModeSwitchLink
                   onClick={() => {
                     onSelectRole?.(AUTH_ROLES.DELIVERY);
-                    onToggleMode(false);
+                    onToggleMode('login');
                   }}
                   className="mt-3 block text-[#8c5a2b] decoration-[#c9935a]"
                 >
@@ -354,13 +364,29 @@ function AuthFormPanel({
                 <ModeSwitchLink
                   onClick={() => {
                     onSelectRole?.(AUTH_ROLES.DELIVERY);
-                    onToggleMode(false);
+                    onToggleMode('login');
                   }}
                   className="mt-3 block text-[#8c5a2b] decoration-[#c9935a]"
                 >
                   {deliveryLinkText}
                 </ModeSwitchLink>
               </>
+            )}
+
+            {!isReactivateMode ? (
+              <ModeSwitchLink
+                onClick={() => onToggleMode('reactivate')}
+                className="mt-3 block"
+              >
+                ¿Tu cuenta fue eliminada? Reactiva tu cuenta aquí.
+              </ModeSwitchLink>
+            ) : (
+              <ModeSwitchLink
+                onClick={() => onToggleMode('login')}
+                className="mt-3 block"
+              >
+                Volver a iniciar sesión
+              </ModeSwitchLink>
             )}
           </div>
         </div>

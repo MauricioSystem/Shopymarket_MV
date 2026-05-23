@@ -7,6 +7,8 @@ import DeliveryDashboard from "@/dashboards/DeliveryDashboard";
 import ProfilePage from "./ProfilePage";
 import EditProfilePage from "./EditProfilePage";
 import UsersPage from "./UsersPage";
+import MarketPage from "./MarketPage";
+import VendorPanelPage from "./VendorPanelPage";
 
 function RoleDispatcher() {
   const { role, currentView } = useAuth();
@@ -21,6 +23,14 @@ function RoleDispatcher() {
 
   if (currentView === "users") {
     return <UsersPage />;
+  }
+
+  if (currentView === "market") {
+    return <MarketPage />;
+  }
+
+  if (currentView === "vendor-panel") {
+    return <VendorPanelPage />;
   }
 
   if (role === AUTH_ROLES.ADMINISTRATOR) {

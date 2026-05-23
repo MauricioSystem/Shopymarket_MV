@@ -2,17 +2,45 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
-const uploadDir = path.join(__dirname, '../uploads/profile_images');
-fs.mkdirSync(uploadDir, { recursive: true });
+const profileImgDir = path.join(__dirname, '../uploads/profile_images');
+const storeImgDir = path.join(__dirname, '../uploads/store_images');
+const productImgDir = path.join(__dirname, '../uploads/product_images');
 
-const storage = multer.diskStorage({
+fs.mkdirSync(profileImgDir, { recursive: true });
+fs.mkdirSync(storeImgDir, { recursive: true });
+fs.mkdirSync(productImgDir, { recursive: true });
+
+const profileStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        cb(null, profileImgDir);
     },
     filename: (req, file, cb) => {
         const timestamp = Date.now();
         const ext = path.extname(file.originalname).toLowerCase();
         cb(null, `${req.params.id || 'user'}-${timestamp}${ext}`);
+    }
+});
+
+const storeStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, storeImgDir);
+    },
+    filename: (req, file, cb) => {
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname).toLowerCase();
+        const fieldName = file.fieldname || 'image';
+        cb(null, `store-${fieldName}-${timestamp}${ext}`);
+    }
+});
+
+const productStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, productImgDir);
+    },
+    filename: (req, file, cb) => {
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `product-${timestamp}${ext}`);
     }
 });
 
@@ -26,13 +54,31 @@ const imageFileFilter = (req, file, cb) => {
 };
 
 const uploadProfileImage = multer({
-    storage,
+    storage: profileStorage,
     fileFilter: imageFileFilter,
     limits: {
         fileSize: 2 * 1024 * 1024 
     }
 });
 
+const uploadStoreImage = multer({
+    storage: storeStorage,
+    fileFilter: imageFileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 
+    }
+});
+
+const uploadProductImage = multer({
+    storage: productStorage,
+    fileFilter: imageFileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 
+    }
+});
+
 module.exports = {
-    uploadProfileImage
+    uploadProfileImage,
+    uploadStoreImage,
+    uploadProductImage
 };

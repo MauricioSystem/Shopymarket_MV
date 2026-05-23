@@ -62,6 +62,15 @@ const validateForm = (formMode, formData) => {
     }
   }
 
+  if (formMode === "reactivate") {
+    if (!formData.email.trim()) {
+      errors.email = "El correo es obligatorio.";
+    }
+    if (!formData.password) {
+      errors.password = "La contraseña es obligatoria.";
+    }
+  }
+
   const emailValue = formData.email.trim().toLowerCase();
   if (!emailValue) {
     errors.email = "El correo es obligatorio.";
@@ -87,6 +96,7 @@ function AuthPage() {
   const {
     login,
     register,
+    reactivate,
     isVendorMode: persistedVendorMode,
     actionContext,
     isAuthenticated,
@@ -102,11 +112,13 @@ function AuthPage() {
     normalizeFrontendRole(actionContext?.role) ||
       (persistedVendorMode ? AUTH_ROLES.VENDOR : AUTH_ROLES.CUSTOMER),
   );
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [formMode, setFormMode] = useState("login");
   const [formData, setFormData] = useState(customerFormDefaults);
   const [formErrors, setFormErrors] = useState({});
   const [formMessage, setFormMessage] = useState("");
 
+  const isRegisterMode = formMode === "register";
+  const isReactivateMode = formMode === "reactivate";
   const isVendorMode =
     accessRole === AUTH_ROLES.VENDOR || accessRole === AUTH_ROLES.ADMINISTRATOR;
 
@@ -165,8 +177,8 @@ function AuthPage() {
     setFormMessage("");
   };
 
-  const handleIntentChange = (nextRegisterMode) => {
-    setIsRegisterMode(nextRegisterMode);
+  const handleIntentChange = (nextMode) => {
+    setFormMode(nextMode);
     setFormErrors({});
     clearError();
     setFormMessage("");
@@ -175,10 +187,7 @@ function AuthPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const validationErrors = validateForm(
-      isRegisterMode ? "register" : "login",
-      formData,
-    );
+    const validationErrors = validateForm(formMode, formData);
     setFormErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -200,6 +209,13 @@ function AuthPage() {
             },
             { isVendorMode, entryPoint: "register", role: accessRole, roleId },
           )
+        : isReactivateMode
+        ? await reactivate(payload, {
+            isVendorMode,
+            entryPoint: "reactivate",
+            role: accessRole,
+            roleId,
+          })
         : await login(payload, {
             isVendorMode,
             entryPoint: "login",
@@ -208,7 +224,7 @@ function AuthPage() {
           });
 
       setFormMessage(
-        `Sesión ${isRegisterMode ? "creada" : "iniciada"} con éxito. Rol real: ${result.role || "sin definir"} · Destino sugerido: ${result.dashboardPath}`,
+        `${isRegisterMode ? "Cuenta creada" : isReactivateMode ? "Cuenta reactivada" : "Sesión iniciada"} con éxito. Rol real: ${result.role || "sin definir"} · Destino sugerido: ${result.dashboardPath}`,
       );
       setFormData(customerFormDefaults);
     } catch {
@@ -263,7 +279,7 @@ function AuthPage() {
             <AuthFormPanel
               accessRole={accessRole}
               isVendorMode={isVendorMode}
-              isRegisterMode={isRegisterMode}
+              formMode={formMode}
               formData={formData}
               formErrors={formErrors}
               formMessage={formMessage}

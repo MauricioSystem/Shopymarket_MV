@@ -16,6 +16,12 @@ const createUser = async (userData) => {
 
         const existingUser = await userModel.getUserByEmail(userData.email);
         if (existingUser) {
+            if (existingUser.status === 'deleted') {
+                throw new Error('Este correo está asociado a una cuenta eliminada. Usa el formulario de reactivación para recuperar tu cuenta.');
+            }
+            if (existingUser.status === 'inactive') {
+                throw new Error('Este correo está asociado a una cuenta desactivada y no puede registrarse de nuevo.');
+            }
             throw new Error('Email already registered');
         }
 

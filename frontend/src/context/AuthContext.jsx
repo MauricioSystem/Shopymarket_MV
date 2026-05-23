@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   loginRequest,
   registerRequest,
+  reactivateRequest,
 } from "@/services/authApi";
 import {
   AUTH_ROLES,
@@ -225,6 +226,8 @@ export function AuthProvider({ children }) {
       const authResult =
         entryPoint === "register"
           ? await registerRequest(credentials)
+          : entryPoint === "reactivate"
+          ? await reactivateRequest(credentials)
           : await loginRequest(credentials);
 
       const resolvedRole = resolvePreferredRole(
@@ -283,6 +286,8 @@ export function AuthProvider({ children }) {
     authenticate({ credentials, ...options, entryPoint: "login" });
   const register = (credentials, options = {}) =>
     authenticate({ credentials, ...options, entryPoint: "register" });
+  const reactivate = (credentials, options = {}) =>
+    authenticate({ credentials, ...options, entryPoint: "reactivate" });
 
   const logout = () => {
     setSession(defaultState);
@@ -344,6 +349,7 @@ export function AuthProvider({ children }) {
       ),
       login,
       register,
+      reactivate,
       logout,
       updateActionContext,
       clearError: () => setError(null),

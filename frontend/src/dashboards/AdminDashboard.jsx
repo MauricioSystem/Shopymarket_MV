@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getAllUsers, createUser, updateUserProfile, deleteUser } from "@/services/usersApi";
+import { getAllCategories, createCategory, updateCategory, deleteCategory } from "@/services/marketApi";
 import { getDisplayName, filterAdminUsers, getProfileImageUrl } from "@/utils/userCapabilities";
 import { normalizeFrontendRole, getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
 
@@ -143,12 +144,20 @@ function MetricCard({ label, value, icon: Icon }) {
 export default function AdminDashboard() {
   const { token, user, logout, setCurrentView } = useAuth();
   const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loadState, setLoadState] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [activeNav, setActiveNav] = useState("resumen");
 
+  // Category Modal
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [categoryForm, setCategoryForm] = useState({ name: "", description: "" });
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
+
+  // User Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("add");
   const [editingUser, setEditingUser] = useState(null);
@@ -172,6 +181,39 @@ export default function AdminDashboard() {
 
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  const handleOpenAddCategoryModal = () => {
+    setCategoryForm({ name: "", description: "" });
+    setCategoryError("");
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSubmitCategory = async (e) => {
+    e.preventDefault();
+    if (!categoryForm.name.trim()) {
+      setCategoryError("El nombre de la categoría es obligatorio.");
+      return;
+    }
+
+    setCategorySubmitting(true);
+    setCategoryError("");
+
+    try {
+      await createCategory(token, {
+        name: categoryForm.name.trim(),
+        description: categoryForm.description.trim(),
+      });
+
+      const result = await getAllCategories(token);
+      setCategories(Array.isArray(result?.data) ? result.data : []);
+      setIsCategoryModalOpen(false);
+      setCategoryForm({ name: "", description: "" });
+    } catch (err) {
+      setCategoryError(err.message || "Error al crear la categoría");
+    } finally {
+      setCategorySubmitting(false);
+    }
+  };
 
   const handleOpenAddModal = () => {
     setFormData(initialFormState);
@@ -350,19 +392,23 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!token) return;
 
-    const fetchUsers = async () => {
+    const fetchUsersAndCategories = async () => {
       setLoadState("loading");
       try {
-        const result = await getAllUsers(token);
-        setUsers(result.data || []);
+        const [usersResult, categoriesResult] = await Promise.all([
+          getAllUsers(token),
+          getAllCategories(token),
+        ]);
+        setUsers(usersResult.data || []);
+        setCategories(Array.isArray(categoriesResult?.data) ? categoriesResult.data : []);
         setLoadState("done");
       } catch (err) {
-        setErrorMsg(err.message || "Error al cargar usuarios");
+        setErrorMsg(err.message || "Error al cargar datos");
         setLoadState("error");
       }
     };
 
-    fetchUsers();
+    fetchUsersAndCategories();
   }, [token]);
 
   useEffect(() => {
@@ -501,6 +547,22 @@ export default function AdminDashboard() {
               <TruckIcon className="h-5 w-5 shrink-0" />
               <span>Repartidores</span>
             </button>
+
+            <button
+              onClick={() => {
+                setActiveNav("categorias");
+                setRoleFilter("all");
+              }}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-left w-full ${activeNav === "categorias"
+                ? "border border-[#f5d367]/40 text-[#f5d367] bg-[#f5d367]/5 shadow-[0_0_12px_rgba(245,211,103,0.15)]"
+                : "text-white/60 hover:text-white/90 hover:bg-white/[0.02]"
+                }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.92.92 2.412.92 3.331 0l6.57-6.57c.92-.92.92-2.412 0-3.331L13.5 3.659c-.42-.422-.994-.659-1.591-.659Zm0 0H9m0 0a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+              </svg>
+              <span>Categorías</span>
+            </button>
           </nav>
         </div>
 
@@ -591,37 +653,135 @@ export default function AdminDashboard() {
               Bienvenido, Administrador
             </p>
             <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Resumen general
+              {activeNav === "categorias" ? "Gestión de Categorías" : "Resumen general"}
             </h1>
             <p className="mt-2 text-sm text-white/50">
-              Supervisa la actividad y el rendimiento de tu plataforma en tiempo real.
+              {activeNav === "categorias" 
+                ? "Crea y gestiona las categorías globales de la plataforma."
+                : "Supervisa la actividad y el rendimiento de tu plataforma en tiempo real."}
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            <MetricCard
-              label="TOTAL USUARIOS"
-              value={stats.total}
-              icon={UsersIcon}
-            />
-            <MetricCard
-              label="VENDEDORES"
-              value={stats.admin}
-              icon={StoreIcon}
-            />
-            <MetricCard
-              label="CLIENTES"
-              value={stats.cliente}
-              icon={CartIcon}
-            />
-            <MetricCard
-              label="REPARTIDORES"
-              value={stats.repartidor}
-              icon={TruckIcon}
-            />
-          </div>
+          {activeNav !== "categorias" && (
+            <>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                <MetricCard
+                  label="TOTAL USUARIOS"
+                  value={stats.total}
+                  icon={UsersIcon}
+                />
+                <MetricCard
+                  label="VENDEDORES"
+                  value={stats.admin}
+                  icon={StoreIcon}
+                />
+                <MetricCard
+                  label="CLIENTES"
+                  value={stats.cliente}
+                  icon={CartIcon}
+                />
+                <MetricCard
+                  label="REPARTIDORES"
+                  value={stats.repartidor}
+                  icon={TruckIcon}
+                />
+              </div>
+            </>
+          )}
 
-          <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#080f1c]/40 backdrop-blur-md shadow-2xl">
+          {activeNav === "categorias" ? (
+            // Categories Section
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#080f1c]/40 backdrop-blur-md shadow-2xl">
+              <div className="flex flex-col gap-4 border-b border-white/5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  Categorías Globales
+                  <span className="text-xs font-semibold text-white/30 bg-white/5 rounded-full px-2.5 py-0.5">
+                    ({categories.length})
+                  </span>
+                </h2>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddCategoryModal}
+                  className="rounded-full border border-[#f5d367] bg-[#f5d367]/10 px-4 py-2 text-xs font-bold text-[#f5d367] hover:bg-[#f5d367]/20 hover:text-white transition-all flex items-center gap-2 shadow-[0_0_12px_rgba(245,211,103,0.1)] w-fit"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="h-4 w-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Agregar Categoría
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="px-6 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
+                        Nombre
+                      </th>
+                      <th className="px-6 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
+                        Descripción
+                      </th>
+                      <th className="px-6 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
+                        Creado
+                      </th>
+                      <th className="px-6 py-3 text-right text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
+                        ⋮
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-white/[0.02]">
+                    {categories.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="py-20 text-center text-sm text-white/40"
+                        >
+                          No hay categorías registradas aún.
+                        </td>
+                      </tr>
+                    ) : (
+                      categories.map((cat) => (
+                        <tr
+                          key={cat.id}
+                          className="hover:bg-white/[0.01] transition-colors duration-150"
+                        >
+                          <td className="px-6 py-4">
+                            <p className="font-semibold text-white">{cat.name}</p>
+                          </td>
+
+                          <td className="px-6 py-4 text-white/60">
+                            <p className="truncate">{cat.description || "—"}</p>
+                          </td>
+
+                          <td className="px-6 py-4 text-white/50">
+                            {formatDate(cat.created_at)}
+                          </td>
+
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                className="text-white/40 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-all"
+                                title="Eliminar categoría"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            // Users Section
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#080f1c]/40 backdrop-blur-md shadow-2xl">
             <div className="flex flex-col gap-4 border-b border-white/5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 Registro de usuarios
@@ -816,8 +976,89 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+          )}
         </div>
       </main>
+
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-[#03070f]/80 backdrop-blur-md"
+            onClick={() => !categorySubmitting && setIsCategoryModalOpen(false)}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#080f1c] shadow-2xl transition-all duration-300 flex flex-col">
+            <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+              <h3 className="text-lg font-bold text-white">
+                Agregar Nueva Categoría
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="text-white/40 hover:text-white transition-colors"
+                disabled={categorySubmitting}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {categoryError && (
+              <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-3 text-xs font-semibold text-red-400">
+                {categoryError}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitCategory} className="flex-1 p-6 space-y-4">
+              <div>
+                <label className="block text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/50 mb-2">Nombre de categoría *</label>
+                <input
+                  type="text"
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-[#040912]/80 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white placeholder-white/30 outline-none focus:border-[#f5d367] transition-all"
+                  placeholder="Ej. Electrónica"
+                  disabled={categorySubmitting}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/50 mb-2">Descripción</label>
+                <textarea
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full bg-[#040912]/80 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white placeholder-white/30 outline-none focus:border-[#f5d367] transition-all resize-none"
+                  placeholder="Descripción opcional..."
+                  rows={3}
+                  disabled={categorySubmitting}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  disabled={categorySubmitting}
+                  className="rounded-full border border-white/10 bg-white/5 px-6 py-2.5 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={categorySubmitting}
+                  className="rounded-full bg-[#f5d367] text-[#120c00] hover:bg-[#ffeb99] transition-colors px-6 py-2.5 text-xs font-bold shadow-[0_4px_16px_rgba(245,211,103,0.15)] flex items-center gap-2 disabled:opacity-50"
+                >
+                  {categorySubmitting && (
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                  )}
+                  Crear Categoría
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

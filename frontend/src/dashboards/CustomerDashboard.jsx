@@ -61,6 +61,14 @@ export default function CustomerDashboard() {
           </div>
 
           <div className="flex items-center gap-3 text-neutral-800">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setCurrentView("market")}
+              className="rounded-[0.85rem] px-4 py-2 text-sm"
+            >
+              Explorar Mercado
+            </Button>
             <div
               onClick={() => setCurrentView("profile")}
               className="hidden flex-col items-end sm:flex cursor-pointer group select-none"
@@ -121,6 +129,7 @@ export default function CustomerDashboard() {
               </div>
               <button
                 type="button"
+                onClick={widget.title === "Explorar Mercado" ? () => setCurrentView("market") : undefined}
                 className={`mt-6 w-full rounded-[0.85rem] py-2.5 text-xs font-semibold transition-all ${theme.secondaryBtnClass}`}
               >
                 {widget.actionText}

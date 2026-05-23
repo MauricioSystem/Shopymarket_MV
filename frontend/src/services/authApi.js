@@ -25,6 +25,11 @@ const REGISTER_ENDPOINTS = parseEndpointList(
     ['/api/auth/register', '/auth/register', '/register'],
 );
 
+const REACTIVATE_ENDPOINTS = parseEndpointList(
+    import.meta.env.VITE_AUTH_REACTIVATE_PATHS,
+    ['/api/auth/reactivate', '/auth/reactivate', '/reactivate'],
+);
+
 const buildUrl = (path) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 const toErrorMessage = (payload, fallback) => {
@@ -185,6 +190,14 @@ export async function loginRequest(credentials) {
 export async function registerRequest(payload) {
     const response = await requestWithFallback(REGISTER_ENDPOINTS, {
         body: payload,
+    });
+
+    return normalizeAuthPayload(response);
+}
+
+export async function reactivateRequest(credentials) {
+    const response = await requestWithFallback(REACTIVATE_ENDPOINTS, {
+        body: credentials,
     });
 
     return normalizeAuthPayload(response);
