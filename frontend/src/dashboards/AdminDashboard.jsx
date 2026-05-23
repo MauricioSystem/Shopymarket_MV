@@ -895,21 +895,9 @@ export default function AdminDashboard() {
                           >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.7rem] font-bold text-[#f5d367] overflow-hidden">
-                                  {u.profile_image_url ? (
-                                    <img
-                                      src={getProfileImageUrl(u.profile_image_url)}
-                                      alt="Profile"
-                                      className="h-full w-full object-cover"
-                                      onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = "";
-                                      }}
-                                    />
-                                  ) : (
-                                    getInitialsFromName(u.first_name, u.last_name)
-                                  )}
-                                 </div>
+                                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.7rem] font-bold text-[#f5d367]">
+                                  {getInitialsFromName(u.first_name, u.last_name)}
+                                </div>
                                 <div className="min-w-0">
                                   <p className="truncate font-semibold text-sm text-white">
                                     {fullName}
