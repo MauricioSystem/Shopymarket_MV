@@ -293,17 +293,7 @@ export default function EditProfilePage() {
             <p className={`text-xs mt-1.5 ${theme.mutedText}`}>Actualiza tus datos de usuario, contraseña e imagen de perfil.</p>
           </div>
 
-          {validationError && (
-            <div className="mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-xs font-semibold text-red-400">
-              {validationError}
-            </div>
-          )}
 
-          {apiError && (
-            <div className="mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-xs font-semibold text-red-400">
-              {apiError}
-            </div>
-          )}
 
           {successMsg && (
             <div className="mb-6 rounded-2xl bg-green-500/10 border border-green-500/20 p-4 text-xs font-semibold text-green-400">
@@ -475,6 +465,12 @@ export default function EditProfilePage() {
                 </div>
               </div>
             </div>
+
+            {(validationError || apiError) && (
+              <p className="text-xs font-semibold text-red-500 text-right mt-4">
+                {validationError || apiError}
+              </p>
+            )}
 
             <div className={`border-t pt-8 ${theme.dividerClass} flex justify-end gap-3`}>
               <Button

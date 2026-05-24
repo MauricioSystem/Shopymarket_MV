@@ -1072,11 +1072,6 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {formErrorMsg && (
-              <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-3 text-xs font-semibold text-red-400">
-                {formErrorMsg}
-              </div>
-            )}
 
             <form onSubmit={handleSubmitModal} className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -1258,6 +1253,11 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
+              {formErrorMsg && (
+                <p className="text-xs font-semibold text-red-500 text-right mb-4">
+                  {formErrorMsg}
+                </p>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
                 <button

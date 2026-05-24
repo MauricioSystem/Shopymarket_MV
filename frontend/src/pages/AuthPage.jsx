@@ -283,6 +283,7 @@ function AuthPage() {
               formData={formData}
               formErrors={formErrors}
               formMessage={formMessage}
+              formMessageIsError={!!error}
               loading={loading}
               onFieldChange={handleFieldChange}
               onToggleMode={handleIntentChange}

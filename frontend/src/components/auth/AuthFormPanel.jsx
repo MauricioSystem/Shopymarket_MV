@@ -66,6 +66,7 @@ function AuthFormPanel({
   formData,
   formErrors,
   formMessage,
+  formMessageIsError,
   loading,
   onFieldChange,
   onToggleMode,
@@ -227,7 +228,7 @@ function AuthFormPanel({
             </button>
           </div>
 
-          {formMessage ? (
+          {formMessage && !formMessageIsError ? (
             <div
               className={`mt-4 rounded-[1.25rem] border px-4 py-3 text-sm ${
                 isVendorMode
@@ -306,6 +307,12 @@ function AuthFormPanel({
                 />
               ) : null}
             </div>
+
+            {formMessage && formMessageIsError ? (
+              <p className="text-xs font-semibold text-red-500 mt-1">
+                {formMessage}
+              </p>
+            ) : null}
 
             <Button
               type="submit"
