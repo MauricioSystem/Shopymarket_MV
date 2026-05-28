@@ -1,51 +1,52 @@
-import { useAuth } from "@/context/AuthContext";
-import { AUTH_ROLES } from "@/utils/authRoles";
-import AdminDashboard from "@/dashboards/AdminDashboard";
-import CustomerDashboard from "@/dashboards/CustomerDashboard";
-import VendorDashboard from "@/dashboards/VendorDashboard";
-import DeliveryDashboard from "@/dashboards/DeliveryDashboard";
-import ProfilePage from "./ProfilePage";
-import EditProfilePage from "./EditProfilePage";
-import UsersPage from "./UsersPage";
-import MarketPage from "./MarketPage";
-import VendorPanelPage from "./VendorPanelPage";
+/**
+ * RoleDispatcher.jsx
+ *
+ * Central routing component for authenticated users.
+ * Resolves the correct page to render based on capabilities or explicit views.
+ */
 
-function RoleDispatcher() {
-  const { role, currentView } = useAuth();
+import { useAuth } from '@/context/AuthContext';
 
-  if (currentView === "profile") {
-    return <ProfilePage />;
-  }
+// ─── Page imports ─────────────────────────────────────────────────────────────
+import AdminDashboard from './dashboards/admin/AdminDashboard';
+import DeliveryDashboard from './dashboards/delivery/DeliveryDashboard';
+import StoreSetupPage from './dashboards/vendor/StoreSetupPage';
+import VendorPanelPage from './dashboards/vendor/VendorPanelPage';
 
-  if (currentView === "edit-profile") {
-    return <EditProfilePage />;
-  }
+import MarketPage from './market/MarketPage';
+import StoreDetailPage from './market/StoreDetailPage';
+import ProfilePage from './profile/ProfilePage';
+import EditProfilePage from './profile/EditProfilePage';
+import UsersPage from './dashboards/admin/UsersPage';
 
-  if (currentView === "users") {
-    return <UsersPage />;
-  }
+// ─── View → Component map for explicit navigation ─────────────────────────────
+const EXPLICIT_VIEWS = {
+    profile: ProfilePage,
+    'edit-profile': EditProfilePage,
+    users: UsersPage,
+    market: MarketPage,
+    'vendor-panel': VendorPanelPage,
+    'store-setup': StoreSetupPage,
+    'store-detail': StoreDetailPage,
+};
 
-  if (currentView === "market") {
+export default function RoleDispatcher() {
+    const { capabilities, currentView } = useAuth();
+
+    // Resolve explicit view first
+    const ExplicitView = currentView ? EXPLICIT_VIEWS[currentView] : null;
+    if (ExplicitView) return <ExplicitView />;
+
+    // Fall back to capability-based default dashboard
+    if (capabilities?.canAccessAdminPanel) {
+        return <AdminDashboard />;
+    }
+    if (capabilities?.canAccessVendorPanel) {
+        return <StoreSetupPage />;
+    }
+    if (capabilities?.canDeliverOrders) {
+        return <DeliveryDashboard />;
+    }
+
     return <MarketPage />;
-  }
-
-  if (currentView === "vendor-panel") {
-    return <VendorPanelPage />;
-  }
-
-  if (role === AUTH_ROLES.ADMINISTRATOR) {
-    return <AdminDashboard />;
-  }
-
-  if (role === AUTH_ROLES.VENDOR) {
-    return <VendorDashboard />;
-  }
-
-  if (role === AUTH_ROLES.DELIVERY) {
-    return <DeliveryDashboard />;
-  }
-
-  return <CustomerDashboard />;
 }
-
-export default RoleDispatcher;

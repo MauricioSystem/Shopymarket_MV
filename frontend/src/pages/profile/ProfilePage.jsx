@@ -3,6 +3,8 @@ import Button from "@/components/ui/Button";
 import BrandMark from "@/components/ui/BrandMark";
 import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
 import { getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
+import { getStoreByUserId, getServiceProfileByUserId, updateMyStore, updateServiceProfile } from "@/services/marketApi";
+import { deleteUser } from "@/services/usersApi";
 
 function getInitials(user) {
   if (!user) return "?";
@@ -62,8 +64,43 @@ const MapPinIcon = ({ className }) => (
 );
 
 export default function ProfilePage() {
-  const { user, role, setCurrentView } = useAuth();
+  const { user, role, token, logout, setCurrentView } = useAuth();
   const roleLabel = getRoleLabel(role);
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "¿Estás seguro de que deseas desactivar tu cuenta? Esta acción deshabilitará tu perfil de usuario y tus comercios asociados."
+    );
+    if (!confirmed) return;
+
+    try {
+      if (role === AUTH_ROLES.VENDOR) {
+        try {
+          const store = await getStoreByUserId(token, user.id);
+          if (store && store.status === 'active') {
+            await updateMyStore(token, store.id, { ...store, status: 'inactive' });
+          }
+        } catch (err) {
+          console.error("Error deactivating store:", err);
+        }
+
+        try {
+          const profile = await getServiceProfileByUserId(token, user.id);
+          if (profile && profile.status === 'active') {
+            await updateServiceProfile(token, profile.id, { ...profile, status: 'inactive' });
+          }
+        } catch (err) {
+          console.error("Error deactivating service profile:", err);
+        }
+      }
+
+      await deleteUser(token, user.id);
+      alert("Tu cuenta ha sido deshabilitada exitosamente.");
+      logout();
+    } catch (err) {
+      alert("Error al desactivar la cuenta: " + (err.message || err));
+    }
+  };
 
   const getTheme = () => {
     switch (role) {
@@ -244,15 +281,26 @@ export default function ProfilePage() {
 
               </div>
 
-              <div className={`mt-8 border-t pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs ${theme.mutedText} ${theme.dividerClass}`}>
-                <div>
-                  Miembro desde: <span className="font-semibold">{formatDate(user?.created_at || user?.createdAt)}</span>
-                </div>
-                {user?.updated_at && (
+              <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className={`flex flex-col gap-2 text-xs ${theme.mutedText}`}>
                   <div>
-                    Última actualización: <span className="font-semibold">{formatDate(user.updated_at || user.updatedAt)}</span>
+                    Miembro desde: <span className="font-semibold">{formatDate(user?.created_at || user?.createdAt)}</span>
                   </div>
-                )}
+                  {user?.updated_at && (
+                    <div>
+                      Última actualización: <span className="font-semibold">{formatDate(user.updated_at || user.updatedAt)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="sm:text-right">
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    className="rounded-xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-500 hover:text-red-400 px-4 py-2 text-xs font-bold transition-all shadow-[0_2px_10px_rgba(239,68,68,0.1)] cursor-pointer select-none"
+                  >
+                    🗑️ Borrar Cuenta
+                  </button>
+                </div>
               </div>
 
             </div>

@@ -26,7 +26,12 @@ const getServiceById = async (req, res) => {
 
 const createService = async (req, res) => {
     try {
-        const result = await serviceService.createService(req.body);
+        const serviceData = { ...req.body };
+        // CAMBIO: Si se subió un archivo físico de imagen para el servicio, guardamos su ruta relativa en serviceData
+        if (req.file) {
+            serviceData.image_url = `/uploads/service_images/${req.file.filename}`;
+        }
+        const result = await serviceService.createService(serviceData);
         return res.status(201).json(result);
     } catch (error) {
         return res.status(400).json(error);
@@ -36,7 +41,12 @@ const createService = async (req, res) => {
 const updateService = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await serviceService.updateService(id, req.body);
+        const serviceData = { ...req.body };
+        // CAMBIO: Si se subió un nuevo archivo físico de imagen para el servicio al actualizar, guardamos su ruta relativa
+        if (req.file) {
+            serviceData.image_url = `/uploads/service_images/${req.file.filename}`;
+        }
+        const result = await serviceService.updateService(id, serviceData);
         return res.status(200).json(result);
     } catch (error) {
         const statusCode = error.error?.includes('not found') ? 404 : 400;

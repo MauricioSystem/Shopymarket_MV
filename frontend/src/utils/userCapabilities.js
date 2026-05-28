@@ -1,42 +1,5 @@
 import { AUTH_ROLES, normalizeFrontendRole } from "./authRoles";
 
-function resolveRole(role) {
-  return normalizeFrontendRole(role) || "";
-}
-
-export function canAccessAdminPanel(role) {
-  return resolveRole(role) === AUTH_ROLES.ADMINISTRATOR;
-}
-
-export function canManageUsers(role) {
-  return resolveRole(role) === AUTH_ROLES.ADMINISTRATOR;
-}
-
-export function canManageProducts(role) {
-  const r = resolveRole(role);
-  return r === AUTH_ROLES.ADMINISTRATOR || r === AUTH_ROLES.VENDOR;
-}
-
-export function canViewReports(role) {
-  return resolveRole(role) === AUTH_ROLES.ADMINISTRATOR;
-}
-
-export function isAdminRole(role) {
-  return resolveRole(role) === AUTH_ROLES.ADMINISTRATOR;
-}
-
-export function isVendorRole(role) {
-  return resolveRole(role) === AUTH_ROLES.VENDOR;
-}
-
-export function isCustomerRole(role) {
-  return resolveRole(role) === AUTH_ROLES.CUSTOMER;
-}
-
-export function isDeliveryRole(role) {
-  return resolveRole(role) === AUTH_ROLES.DELIVERY;
-}
-
 export function getDisplayName(user) {
   if (!user) return "Usuario";
 

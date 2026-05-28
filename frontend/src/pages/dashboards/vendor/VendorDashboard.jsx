@@ -115,7 +115,7 @@ export default function VendorDashboard() {
             Dashboard de {roleLabel}
           </p>
           <h1 className={`mt-2 text-3xl font-bold tracking-tight sm:text-4xl ${theme.titleText}`}>
-            Bienvenido de vuelta, {getDisplayName(user)}
+            Bienvenido, {getDisplayName(user)}
           </h1>
           <p className={`mt-3 max-w-2xl text-sm leading-6 ${theme.mutedText}`}>
             Tu panel de vendedor está listo. Comienza por crear tu tienda o tu primer servicio para poder vender.

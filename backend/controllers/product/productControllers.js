@@ -42,7 +42,12 @@ const getProductsByCategory = async (req, res) => {
 
 const createProduct = async (req, res) => {
     try {
-        const result = await productService.createProduct(req.body);
+        const productData = { ...req.body };
+        // CAMBIO: Si se subió un archivo físico de imagen para el producto, guardamos su ruta relativa en productData
+        if (req.file) {
+            productData.image_url = `/uploads/product_images/${req.file.filename}`;
+        }
+        const result = await productService.createProduct(productData);
         return res.status(201).json(result);
     } catch (error) {
         return res.status(400).json(error);
@@ -52,7 +57,12 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await productService.updateProduct(id, req.body);
+        const productData = { ...req.body };
+        // CAMBIO: Si se subió un nuevo archivo físico de imagen para el producto al actualizar, guardamos su ruta relativa
+        if (req.file) {
+            productData.image_url = `/uploads/product_images/${req.file.filename}`;
+        }
+        const result = await productService.updateProduct(id, productData);
         return res.status(200).json(result);
     } catch (error) {
         const statusCode = error.error?.includes('not found') ? 404 : 400;

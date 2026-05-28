@@ -25,11 +25,27 @@ const getStoreById = async (req, res) => {
 };
 
 const createStore = async (req, res) => {
+    console.log('DEBUG backend createStore:', {
+        headers: req.headers,
+        body: req.body,
+        files: req.files,
+        user: req.user
+    });
     try {
         const storeData = {
             ...req.body,
             admin_user_id: req.user?.id,
         };
+
+        // CAMBIO: Si se subieron archivos físicos (logo y/o banner), guardamos su ruta relativa en storeData
+        if (req.files) {
+            if (req.files.logo) {
+                storeData.logo_url = `/uploads/store_images/${req.files.logo[0].filename}`;
+            }
+            if (req.files.banner) {
+                storeData.banner_url = `/uploads/store_images/${req.files.banner[0].filename}`;
+            }
+        }
 
         const result = await storeService.createStore(storeData);
         return res.status(201).json(result);
@@ -41,7 +57,17 @@ const createStore = async (req, res) => {
 const updateStore = async (req, res) => {
     try {
         const { id } = req.params;
-        const storeData = req.body;
+        const storeData = { ...req.body };
+
+        // CAMBIO: Si se subieron nuevos archivos físicos (logo y/o banner) en la actualización, guardamos su ruta relativa
+        if (req.files) {
+            if (req.files.logo) {
+                storeData.logo_url = `/uploads/store_images/${req.files.logo[0].filename}`;
+            }
+            if (req.files.banner) {
+                storeData.banner_url = `/uploads/store_images/${req.files.banner[0].filename}`;
+            }
+        }
 
         const result = await storeService.updateStore(id, storeData);
         return res.status(200).json(result);

@@ -1,0 +1,51 @@
+export const ADMIN_SIDEBAR_ITEMS = [
+  {
+    id: "resumen",
+    label: "Resumen",
+    icon: "home",
+    roleFilter: "all",
+    requiredCapability: "canAccessAdminPanel",
+  },
+  {
+    id: "usuarios",
+    label: "Usuarios",
+    icon: "users",
+    roleFilter: "all",
+    requiredCapability: "canManageUsers",
+  },
+  {
+    id: "vendedores",
+    label: "Vendedores",
+    icon: "store",
+    roleFilter: "admin",
+    requiredCapability: "canManageUsers",
+  },
+  {
+    id: "tiendas",
+    label: "Tiendas / Comercios",
+    icon: "store",
+    roleFilter: "all",
+    requiredCapability: "canManageStores",
+  },
+  {
+    id: "clientes",
+    label: "Clientes",
+    icon: "cart",
+    roleFilter: "cliente",
+    requiredCapability: "canManageUsers",
+  },
+  {
+    id: "repartidores",
+    label: "Repartidores",
+    icon: "truck",
+    roleFilter: "repartidor",
+    requiredCapability: "canManageUsers",
+  },
+  {
+    id: "categorias",
+    label: "Categorías",
+    icon: "tag",
+    roleFilter: "all",
+    requiredCapability: "canManageCategories",
+  },
+];
