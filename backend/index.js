@@ -13,6 +13,8 @@ const categoryRoutes = require('./routes/category/categoryRoutes');
 const subcategoryRoutes = require('./routes/subcategory/subcategoryRoutes');
 const productRoutes = require('./routes/product/productRoutes');
 const ratingRoutes = require('./routes/rating/ratingRoutes');
+const cartRoutes = require('./routes/cart/cartRoutes');
+const orderRoutes = require('./routes/order/orderRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,6 +43,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/subcategories', subcategoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/ratings', ratingRoutes);
+app.use('/api/carts', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

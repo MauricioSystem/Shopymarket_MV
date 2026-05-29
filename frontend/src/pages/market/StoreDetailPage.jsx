@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import BrandMark from "@/components/ui/BrandMark";
@@ -15,11 +16,12 @@ const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
 ).replace(/\/$/, "");
 
-export default function StoreDetailPage() {
+export default function StoreDetailPage({ type }) {
+  const { storeName, serviceName } = useParams();
+  const routerNavigate = useNavigate();
   const {
     user,
     isAuthenticated,
-    setCurrentView,
     selectedStoreId,
     setSelectedStoreId,
     selectedServiceProfileId,
@@ -59,19 +61,33 @@ export default function StoreDetailPage() {
       let currentStore = null;
       let currentProfile = null;
 
-      if (selectedStoreId) {
-        currentStore = allStores.find((s) => s && Number(s.id) === Number(selectedStoreId)) || null;
-        if (currentStore) {
-          currentProfile = allProfiles.find(
-            (p) =>
-              p && (Number(p.store_id) === Number(currentStore.id) ||
-              Number(p.admin_user_id) === Number(currentStore.admin_user_id))
-          ) || null;
-        }
-      } else if (selectedServiceProfileId) {
-        currentProfile = allProfiles.find((p) => p && Number(p.id) === Number(selectedServiceProfileId)) || null;
-        if (currentProfile && currentProfile.store_id) {
-          currentStore = allStores.find((s) => s && Number(s.id) === Number(currentProfile.store_id)) || null;
+      // Primero buscar por parámetros de ruta (URL)
+      if (storeName) {
+        currentStore = allStores.find(
+          (s) => s && (s.name?.toLowerCase() === storeName.toLowerCase() || s.id == storeName)
+        ) || null;
+      } else if (serviceName) {
+        currentProfile = allProfiles.find(
+          (p) => p && (p.business_name?.toLowerCase() === serviceName.toLowerCase() || p.id == serviceName)
+        ) || null;
+      }
+
+      // Si no encontró por ruta, usar los del contexto
+      if (!currentStore && !currentProfile) {
+        if (selectedStoreId) {
+          currentStore = allStores.find((s) => s && Number(s.id) === Number(selectedStoreId)) || null;
+          if (currentStore) {
+            currentProfile = allProfiles.find(
+              (p) =>
+                p && (Number(p.store_id) === Number(currentStore.id) ||
+                Number(p.admin_user_id) === Number(currentStore.admin_user_id))
+            ) || null;
+          }
+        } else if (selectedServiceProfileId) {
+          currentProfile = allProfiles.find((p) => p && Number(p.id) === Number(selectedServiceProfileId)) || null;
+          if (currentProfile && currentProfile.store_id) {
+            currentStore = allStores.find((s) => s && Number(s.id) === Number(currentProfile.store_id)) || null;
+          }
         }
       }
 
@@ -101,7 +117,7 @@ export default function StoreDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedStoreId, selectedServiceProfileId]);
+  }, [selectedStoreId, selectedServiceProfileId, storeName, serviceName]);
 
   useEffect(() => {
     loadData();
@@ -114,24 +130,23 @@ export default function StoreDetailPage() {
     if (capabilities?.canAccessAdminPanel) {
       setSelectedStoreId(null);
       setSelectedServiceProfileId(null);
-      setCurrentView(null);
+      routerNavigate("/dashboard/administrator");
     } else if (showBackToPanel) {
-      // Vendor returns to their setup panel
-      setCurrentView("store-setup");
+      routerNavigate("/dashboard/vendor");
     } else {
       setSelectedStoreId(null);
       setSelectedServiceProfileId(null);
-      setCurrentView("market");
+      routerNavigate("/market");
     }
   };
 
   const handleEdit = () => {
-    setCurrentView("store-setup");
+    routerNavigate("/dashboard/vendor");
   };
 
   const handleBuy = () => {
     if (!isAuthenticated) {
-      setCurrentView("login");
+      routerNavigate("/login");
     } else {
       setCartAlert(true);
       setTimeout(() => setCartAlert(false), 3000);

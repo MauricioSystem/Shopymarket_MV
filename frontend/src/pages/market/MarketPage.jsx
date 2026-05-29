@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import BrandMark from "@/components/ui/BrandMark";
@@ -299,11 +300,10 @@ function ProductCard({ product, isAuthenticated, onBuy }) {
           <button
             type="button"
             onClick={onBuy}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
-              isAuthenticated
+            className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${isAuthenticated
                 ? "bg-[#1a1200] text-[#fff8df] hover:opacity-80"
                 : "border border-[rgba(201,150,12,0.3)] text-[#c8960c] hover:bg-[#c8960c]/5"
-            }`}
+              }`}
           >
             {isAuthenticated ? "🛒 Comprar" : "🔐 Ingresar"}
           </button>
@@ -422,8 +422,9 @@ function EmptyState({ message, actionLabel, onAction }) {
 }
 
 export default function MarketPage() {
-  const { token, user, role, isAuthenticated, logout, setCurrentView, setSelectedStoreId, setSelectedServiceProfileId } =
+  const { token, user, role, isAuthenticated, logout, capabilities } =
     useAuth();
+  const routerNavigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -435,7 +436,18 @@ export default function MarketPage() {
   const [error, setError] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const navigate = (view) => setCurrentView(view);
+  const navigate = (view) => {
+    const viewToRoute = {
+      home: "/home",
+      login: "/login",
+      register: "/register",
+      market: "/market",
+      profile: "/dashboard",
+      dashboard: capabilities?.canAccessAdminPanel ? "/dashboard/administrator" : capabilities?.canAccessVendorPanel ? "/dashboard/vendor" : capabilities?.canDeliverOrders ? "/dashboard/delivery" : "/dashboard/customer",
+      "store-setup": "/dashboard/vendor",
+    };
+    routerNavigate(viewToRoute[view] || "/home");
+  };
 
   const loadMarketData = useCallback(async () => {
     setError(null);
@@ -599,11 +611,10 @@ export default function MarketPage() {
               role="tab"
               aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all ${
-                activeTab === tab.id
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all ${activeTab === tab.id
                   ? "bg-[#1a1200] text-[#fff8df] shadow-md"
                   : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -643,13 +654,10 @@ export default function MarketPage() {
                     store={store}
                     onClick={() => {
                       if (store.isServiceProfile) {
-                        setSelectedStoreId(store.store_id || null);
-                        setSelectedServiceProfileId(store.id);
+                        routerNavigate(`/service/${encodeURIComponent(store.name)}`);
                       } else {
-                        setSelectedStoreId(store.id);
-                        setSelectedServiceProfileId(null);
+                        routerNavigate(`/store/${encodeURIComponent(store.name)}`);
                       }
-                      setCurrentView("store-detail");
                     }}
                   />
                 ))}
@@ -722,9 +730,7 @@ export default function MarketPage() {
                     key={service.id}
                     service={service}
                     onClick={() => {
-                      setSelectedStoreId(service.store_id || null);
-                      setSelectedServiceProfileId(service.service_profile_id);
-                      setCurrentView("store-detail");
+                      routerNavigate(`/service/${encodeURIComponent(service.name)}`);
                     }}
                   />
                 ))}

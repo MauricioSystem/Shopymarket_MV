@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { AUTH_ROLES } from "@/utils/authRoles";
 import BrandMark from "@/components/ui/BrandMark";
@@ -483,7 +484,8 @@ function Navbar({
 }
 
 export default function HomePage() {
-  const { isAuthenticated, user, role, logout, setCurrentView, setSelectedStoreId, setSelectedServiceProfileId } = useAuth();
+  const { isAuthenticated, user, role, logout, capabilities } = useAuth();
+  const routerNavigate = useNavigate();
 
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -547,27 +549,38 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const navigate = (view) => setCurrentView(view);
+  const navigate = (view) => {
+    const viewToRoute = {
+      home: "/home",
+      login: "/login",
+      register: "/register",
+      market: "/market",
+      profile: "/dashboard",
+      dashboard: capabilities?.canAccessAdminPanel ? "/dashboard/administrator" : capabilities?.canAccessVendorPanel ? "/dashboard/vendor" : capabilities?.canDeliverOrders ? "/dashboard/delivery" : "/dashboard/customer",
+      "store-setup": "/dashboard/vendor",
+    };
+    routerNavigate(viewToRoute[view] || "/home");
+  };
 
   const handleAudienceCTA = (card) => {
     if (!card.requiresAuth || isAuthenticated) {
       if (card.id === "vendors") {
-        navigate(isAuthenticated ? "store-setup" : "login");
+        routerNavigate(isAuthenticated ? "/dashboard/vendor" : "/register");
       } else if (card.id === "delivery") {
-        navigate(isAuthenticated ? "dashboard" : "login");
+        routerNavigate(isAuthenticated ? "/dashboard/delivery" : "/register");
       } else {
         navigate(card.ctaView);
       }
     } else {
-      navigate("login");
+      routerNavigate("/register");
     }
   };
 
   const handleHeroCTA = (slide) => {
-    if (slide.cta.view === "market") navigate("market");
+    if (slide.cta.view === "market") routerNavigate("/market");
     else if (slide.cta.view === "vendor")
-      navigate(isAuthenticated ? "store-setup" : "login");
-    else navigate(isAuthenticated ? "dashboard" : "login");
+      routerNavigate(isAuthenticated ? "/dashboard/vendor" : "/register");
+    else routerNavigate(isAuthenticated ? "/dashboard/delivery" : "/register");
   };
 
   const handleBuyProduct = () => {
@@ -659,7 +672,7 @@ export default function HomePage() {
                 {!isAuthenticated && (
                   <button
                     type="button"
-                    onClick={() => navigate("login")}
+                    onClick={() => routerNavigate("/register")}
                     className="rounded-full border border-white/20 bg-white/5 text-white px-8 py-3 text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-all"
                   >
                     Crear Cuenta
@@ -797,13 +810,10 @@ export default function HomePage() {
                   store={store}
                   onClick={() => {
                     if (store.isServiceProfile) {
-                      setSelectedStoreId(store.store_id || null);
-                      setSelectedServiceProfileId(store.id);
+                      routerNavigate(`/service/${encodeURIComponent(store.name)}`);
                     } else {
-                      setSelectedStoreId(store.id);
-                      setSelectedServiceProfileId(null);
+                      routerNavigate(`/store/${encodeURIComponent(store.name)}`);
                     }
-                    setCurrentView("store-detail");
                   }}
                 />
               ))}
@@ -863,9 +873,7 @@ export default function HomePage() {
                   service={service}
                   onViewProfile={() => {
                     // Navega al perfil del proveedor del servicio
-                    setSelectedStoreId(null);
-                    setSelectedServiceProfileId(service.service_profile_id);
-                    setCurrentView("store-detail");
+                    routerNavigate(`/service/${encodeURIComponent(service.name)}`);
                   }}
                 />
               ))}
@@ -962,7 +970,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() =>
-                  navigate(isAuthenticated ? "store-setup" : "login")
+                  routerNavigate(isAuthenticated ? "/dashboard/vendor" : "/register")
                 }
                 className="hover:text-[#c8960c] transition-colors"
               >

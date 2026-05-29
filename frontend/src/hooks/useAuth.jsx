@@ -200,9 +200,6 @@ export function AuthProvider({ children }) {
 
     setSession(nextSession);
     setError(null);
-    if (auth) {
-      setCurrentView("dashboard");
-    }
     return nextSession;
   };
 

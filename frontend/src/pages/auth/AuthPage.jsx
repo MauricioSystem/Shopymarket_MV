@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import AuthHero from "@/components/auth/AuthHero";
 import AuthFormPanel from "@/components/auth/AuthFormPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -93,6 +94,7 @@ const validateForm = (formMode, formData) => {
 };
 
 function AuthPage() {
+  const location = useLocation();
   const {
     login,
     register,
@@ -108,11 +110,19 @@ function AuthPage() {
     clearError,
     isHydrated,
   } = useAuth();
+  const routerNavigate = useNavigate();
+  
+  // Determinar el modo basándose en la ruta
+  const getInitialFormMode = () => {
+    if (location.pathname === "/register") return "register";
+    return "login";
+  };
+
   const [accessRole, setAccessRole] = useState(
     normalizeFrontendRole(actionContext?.role) ||
       (persistedVendorMode ? AUTH_ROLES.VENDOR : AUTH_ROLES.CUSTOMER),
   );
-  const [formMode, setFormMode] = useState("login");
+  const [formMode, setFormMode] = useState(getInitialFormMode);
   const [formData, setFormData] = useState(customerFormDefaults);
   const [formErrors, setFormErrors] = useState({});
   const [formMessage, setFormMessage] = useState("");
@@ -122,15 +132,13 @@ function AuthPage() {
   const isVendorMode =
     accessRole === AUTH_ROLES.VENDOR || accessRole === AUTH_ROLES.ADMINISTRATOR;
 
+  // Sincronizar el formulario con los cambios de ruta
   useEffect(() => {
-    if (isHydrated) {
-      const hydratedRole = normalizeFrontendRole(actionContext?.role);
-      setAccessRole(
-        hydratedRole ||
-          (persistedVendorMode ? AUTH_ROLES.VENDOR : AUTH_ROLES.CUSTOMER),
-      );
-    }
-  }, [isHydrated, actionContext?.role, persistedVendorMode]);
+    setFormMode(getInitialFormMode());
+    setFormErrors({});
+    setFormMessage("");
+    clearError();
+  }, [location.pathname]);
 
   useEffect(() => {
     if (error) {
@@ -178,6 +186,12 @@ function AuthPage() {
   };
 
   const handleIntentChange = (nextMode) => {
+    // Navigate to the correct route when toggling between login/register
+    if (nextMode === "register") {
+      routerNavigate("/register");
+    } else if (nextMode === "login") {
+      routerNavigate("/login");
+    }
     setFormMode(nextMode);
     setFormErrors({});
     clearError();
@@ -224,9 +238,14 @@ function AuthPage() {
           });
 
       setFormMessage(
-        `${isRegisterMode ? "Cuenta creada" : isReactivateMode ? "Cuenta reactivada" : "Sesión iniciada"} con éxito. Rol real: ${result.role || "sin definir"} · Destino sugerido: ${result.dashboardPath}`,
+        `${isRegisterMode ? "Cuenta creada" : isReactivateMode ? "Cuenta reactivada" : "Sesión iniciada"} con éxito.`,
       );
       setFormData(customerFormDefaults);
+
+      // Redirect to appropriate dashboard after successful auth
+      if (result.dashboardPath) {
+        routerNavigate(result.dashboardPath);
+      }
     } catch {
     }
   };
