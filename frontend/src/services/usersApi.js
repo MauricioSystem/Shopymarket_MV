@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+import { API_BASE_URL } from "@/config/appSettings";
 
 async function apiFetch(path, { token, method = 'GET', body } = {}) {
     const response = await fetch(`${API_BASE_URL}${path}`, {

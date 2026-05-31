@@ -24,6 +24,7 @@ import {
   getAllServiceProfiles,
   getAllCategories,
 } from "@/services/marketApi";
+import { API_BASE_URL } from "@/config/appSettings";
 
 const TABS = [
   { id: "all", label: "Todo", icon: "🌐" },
@@ -35,9 +36,7 @@ const TABS = [
 // Navbar is imported globally
 
 function StoreCard({ store, onClick }) {
-  const API_BASE = (
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
-  ).replace(/\/$/, "");
+  const API_BASE = API_BASE_URL;
   const logo = store.logo_url || store.profile_image_url;
   const logoUrl = logo
     ? logo.startsWith("http")
@@ -116,9 +115,7 @@ function StoreCard({ store, onClick }) {
 }
 
 function ProductCard({ product, isAuthenticated, onBuy, onClick }) {
-  const API_BASE = (
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
-  ).replace(/\/$/, "");
+  const API_BASE = API_BASE_URL;
   const imageUrl = product.image_url
     ? product.image_url.startsWith("http")
       ? product.image_url
@@ -189,9 +186,7 @@ function ProductCard({ product, isAuthenticated, onBuy, onClick }) {
 }
 
 function ServiceCard({ service, onClick }) {
-  const API_BASE = (
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
-  ).replace(/\/$/, "");
+  const API_BASE = API_BASE_URL;
   const imageUrl = service.image_url
     ? service.image_url.startsWith("http")
       ? service.image_url

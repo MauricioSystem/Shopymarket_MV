@@ -15,6 +15,8 @@ const productRoutes = require('./routes/product/productRoutes');
 const ratingRoutes = require('./routes/rating/ratingRoutes');
 const cartRoutes = require('./routes/cart/cartRoutes');
 const orderRoutes = require('./routes/order/orderRoutes');
+const seoRoutes = require('./routes/seo/seoRoutes');
+const { getSitemap, getRobots } = require('./controllers/seo/seoControllers');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +36,9 @@ app.get('/', async (req, res) => {
     }
 });
 
+app.get('/robots.txt', getRobots);
+app.get('/sitemap.xml', getSitemap);
+
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stores', storeRoutes);
@@ -45,6 +50,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/ratings', ratingRoutes);
 app.use('/api/carts', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/seo', seoRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

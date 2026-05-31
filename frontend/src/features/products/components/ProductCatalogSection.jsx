@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import { API_BASE_URL } from "@/config/appSettings";
 import { useProductCatalog } from '../hooks/useProductCatalog';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+const API_BASE = API_BASE_URL;
 
 function FieldGroup({ children }) {
     return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;

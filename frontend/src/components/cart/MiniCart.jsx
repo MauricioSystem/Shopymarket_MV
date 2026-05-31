@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import Button from '../ui/Button';
+import { API_BASE_URL } from "@/config/appSettings";
 
 export default function MiniCart() {
   const { isCartOpen, closeCart, cartItems, cartTotal, updateQuantity, removeFromCart, loadingCart } = useCart();
@@ -14,7 +15,7 @@ export default function MiniCart() {
     navigate('/cart');
   };
 
-  const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const API_BASE = API_BASE_URL;
   const getImageUrl = (url) => url ? (url.startsWith("http") ? url : `${API_BASE}${url}`) : null;
 
   return (

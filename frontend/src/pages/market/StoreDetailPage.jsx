@@ -13,10 +13,9 @@ import {
 } from "@/services/marketApi";
 import { useCart } from "@/context/CartContext";
 import Navbar from "@/components/layout/Navbar";
+import { API_BASE_URL } from "@/config/appSettings";
 
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
-).replace(/\/$/, "");
+const API_BASE = API_BASE_URL;
 // Modals extracted to dedicated pages
 
 export default function StoreDetailPage({ type }) {

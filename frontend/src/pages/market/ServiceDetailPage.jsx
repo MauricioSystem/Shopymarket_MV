@@ -4,10 +4,11 @@ import { useAuth } from "@/context/AuthContext";
 import { getAllServices, getAllServiceProfiles } from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
+import { API_BASE_URL } from "@/config/appSettings";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const API_BASE = API_BASE_URL;
 
 export default function ServiceDetailPage() {
   const { id } = useParams();

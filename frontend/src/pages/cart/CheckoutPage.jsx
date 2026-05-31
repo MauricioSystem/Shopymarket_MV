@@ -4,8 +4,9 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/layout/Navbar';
 import Button from '../../components/ui/Button';
+import { API_BASE_URL } from "@/config/appSettings";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const API_BASE = API_BASE_URL;
 const getImageUrl = (url) => url ? (url.startsWith("http") ? url : `${API_BASE}${url}`) : null;
 
 // ── Componente de paso en el stepper ─────────────────────────────────────────

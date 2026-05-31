@@ -1,4 +1,5 @@
 import { AUTH_ROLES, normalizeFrontendRole } from "./authRoles";
+import { API_BASE_URL } from "@/config/appSettings";
 
 export function getDisplayName(user) {
   if (!user) return "Usuario";
@@ -34,7 +35,6 @@ export function getProfileImageUrl(url) {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-  const baseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
-  return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
