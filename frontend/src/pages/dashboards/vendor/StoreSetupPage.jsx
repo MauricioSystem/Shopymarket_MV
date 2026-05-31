@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import BrandMark from '@/components/ui/BrandMark';
 import { getDisplayName, getProfileImageUrl } from '@/utils/userCapabilities';
@@ -68,7 +69,8 @@ function Navbar({ user, onProfile, onLogout }) {
 }
 
 export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
-    const { token, user, logout, setCurrentView, setSelectedStoreId, setSelectedServiceProfileId } = useAuth();
+    const { token, user, logout, setSelectedStoreId, setSelectedServiceProfileId } = useAuth();
+    const navigate = useNavigate();
     const targetUser = overrideUser || user;
 
     // Navigation Tabs State
@@ -151,7 +153,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
         }
     };
 
-    const goToProfile = () => setCurrentView('profile');
+    const goToProfile = () => navigate('/profile');
 
     const wantsStore = commerceType === 'products' || commerceType === 'both';
     const wantsService = commerceType === 'services' || commerceType === 'both';
@@ -159,7 +161,8 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
 
     // Define navigation tabs configuration dynamically
     const dashboardTabs = [
-        { id: 'view', label: '👁️ Ver mi Comercio' },
+        ...(existingStore?.id ? [{ id: 'view_store', label: '👁️ Ver mi Tienda' }] : []),
+        ...(existingServiceProfile?.id ? [{ id: 'view_service', label: '👁️ Ver mi Perfil de Servicios' }] : []),
         { id: 'edit', label: '⚙️ Editar Información' },
         ...(wantsStore ? [{ id: 'products', label: '📦 Mis Productos' }] : []),
         ...(wantsService ? [{ id: 'services', label: '🔧 Mis Servicios' }] : []),
@@ -216,14 +219,18 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
                                         key={tab.id}
                                         type="button"
                                         onClick={() => {
-                                            if (tab.id === 'view') {
+                                            if (tab.id === 'view_store') {
                                                 if (existingStore?.id) {
                                                     setSelectedStoreId(existingStore.id);
+                                                    navigate(`/store/${encodeURIComponent(existingStore.name)}`);
                                                 }
+                                                return;
+                                            }
+                                            if (tab.id === 'view_service') {
                                                 if (existingServiceProfile?.id) {
                                                     setSelectedServiceProfileId(existingServiceProfile.id);
+                                                    navigate(`/service/${encodeURIComponent(existingServiceProfile.name)}`);
                                                 }
-                                                setCurrentView("store-detail");
                                                 return;
                                             }
                                             setActiveDashboardTab(tab.id);
@@ -242,7 +249,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
                         )}
 
                         {/* TAB: EDIT STORE DETAILS */}
-                        {(!hasCommerce || activeDashboardTab === 'edit') && (
+                        <div className={(!hasCommerce || activeDashboardTab === 'edit') ? "block" : "hidden"}>
                             <StoreFormSection
                                 commerceType={commerceType}
                                 setCommerceType={setCommerceType}
@@ -268,39 +275,45 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
                                 handleSave={async (e) => {
                                     const result = await handleSave(e);
                                     if (result?.success && hasCommerce) {
-                                        setActiveDashboardTab('view');
+                                        setActiveDashboardTab('edit');
                                     }
                                 }}
                             />
-                        )}
+                        </div>
 
                         {/* TAB: MANAGE PRODUCTS */}
-                        {hasCommerce && activeDashboardTab === 'products' && (
-                            <ProductCatalogSection
-                                token={token}
-                                existingStore={existingStore}
-                                categories={categories}
-                                subcategories={subcategories}
-                                refreshCategories={refreshCategories}
-                            />
+                        {hasCommerce && (
+                            <div className={activeDashboardTab === 'products' ? "block" : "hidden"}>
+                                <ProductCatalogSection
+                                    token={token}
+                                    existingStore={existingStore}
+                                    categories={categories}
+                                    subcategories={subcategories}
+                                    refreshCategories={refreshCategories}
+                                />
+                            </div>
                         )}
 
                         {/* TAB: MANAGE SERVICES */}
-                        {hasCommerce && activeDashboardTab === 'services' && (
-                            <ServiceCatalogSection
-                                token={token}
-                                existingServiceProfile={existingServiceProfile}
-                                categories={categories}
-                            />
+                        {hasCommerce && (
+                            <div className={activeDashboardTab === 'services' ? "block" : "hidden"}>
+                                <ServiceCatalogSection
+                                    token={token}
+                                    existingServiceProfile={existingServiceProfile}
+                                    categories={categories}
+                                />
+                            </div>
                         )}
 
                         {/* TAB: PLATFORM CATEGORIES & SUBCATEGORIES */}
-                        {hasCommerce && activeDashboardTab === 'categories' && (
-                            <VendorCategoriesSection
-                                categories={categories}
-                                subcategories={subcategories}
-                                handleCreateSubcategory={handleCreateSubcategory}
-                            />
+                        {hasCommerce && (
+                            <div className={activeDashboardTab === 'categories' ? "block" : "hidden"}>
+                                <VendorCategoriesSection
+                                    categories={categories}
+                                    subcategories={subcategories}
+                                    handleCreateSubcategory={handleCreateSubcategory}
+                                />
+                            </div>
                         )}
                     </div>
                 )}

@@ -244,8 +244,8 @@ export function AuthProvider({ children }) {
       }, resolvedRole);
 
       const caps = nextSession.auth.capabilities;
-      let dashboardPath = "/dashboard/customer";
-      if (caps.canAccessAdminPanel) dashboardPath = "/dashboard/administrator";
+      let dashboardPath = "/profile";
+      if (caps.canAccessAdminPanel) dashboardPath = "/dashboard/admin";
       else if (caps.canAccessVendorPanel) dashboardPath = "/dashboard/vendor";
       else if (caps.canDeliverOrders) dashboardPath = "/dashboard/delivery";
 
@@ -319,8 +319,8 @@ export function AuthProvider({ children }) {
       ? "delivery"
       : "customer";
 
-    let dashboardPath = "/dashboard/customer";
-    if (capabilities.canAccessAdminPanel) dashboardPath = "/dashboard/administrator";
+    let dashboardPath = "/profile";
+    if (capabilities.canAccessAdminPanel) dashboardPath = "/dashboard/admin";
     else if (capabilities.canAccessVendorPanel) dashboardPath = "/dashboard/vendor";
     else if (capabilities.canDeliverOrders) dashboardPath = "/dashboard/delivery";
 

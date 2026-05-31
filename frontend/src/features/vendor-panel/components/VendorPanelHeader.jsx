@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '@/components/ui/Button';
 
-export function VendorPanelHeader({ setCurrentView, loadData }) {
+export function VendorPanelHeader({ loadData }) {
+  const navigate = useNavigate();
   return (
     <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
@@ -14,7 +16,7 @@ export function VendorPanelHeader({ setCurrentView, loadData }) {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button variant="secondary" onClick={() => setCurrentView('dashboard')}>
+          <Button variant="secondary" onClick={() => navigate('/dashboard/vendor')}>
             Volver al dashboard
           </Button>
           <Button onClick={loadData}>Actualizar datos</Button>

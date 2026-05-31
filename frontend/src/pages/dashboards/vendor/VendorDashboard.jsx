@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import BrandMark from "@/components/ui/BrandMark";
@@ -13,7 +14,8 @@ function getInitials(user) {
 }
 
 export default function VendorDashboard() {
-  const { user, logout, role, setCurrentView } = useAuth();
+  const { user, logout, role } = useAuth();
+  const navigate = useNavigate();
   const [setupMode, setSetupMode] = useState(null);
   const roleLabel = getRoleLabel(role);
 
@@ -66,13 +68,13 @@ export default function VendorDashboard() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setCurrentView("vendor-panel")}
+              onClick={() => navigate("/dashboard/vendor-panel")}
               className="rounded-[0.85rem] px-4 py-2 text-sm"
             >
               Administrar recursos
             </Button>
             <div
-              onClick={() => setCurrentView("profile")}
+              onClick={() => navigate("/profile")}
               className="hidden flex-col items-end sm:flex cursor-pointer group select-none"
             >
               <p className="text-sm font-medium group-hover:text-[#f5d367] transition-colors">
@@ -81,7 +83,7 @@ export default function VendorDashboard() {
               <p className="text-[0.7rem] opacity-60 text-white/50">{user?.email}</p>
             </div>
             <div
-              onClick={() => setCurrentView("profile")}
+              onClick={() => navigate("/profile")}
               className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-bold overflow-hidden shrink-0 cursor-pointer hover:border-white/20 transition-colors ${theme.accentText}`}
             >
               {user?.profile_image_url ? (

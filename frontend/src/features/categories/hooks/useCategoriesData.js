@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { getAllCategories, createCategory, deleteCategory } from "@/services/marketApi";
+import { getAllCategories, createCategory, deleteCategory, updateCategory } from "@/services/marketApi";
 
 export function useCategoriesData(token) {
   const [categories, setCategories] = useState([]);
@@ -38,6 +38,22 @@ export function useCategoriesData(token) {
     }
   }, [token]);
 
+  const editCategory = useCallback(async (catId, payload) => {
+    setCategorySubmitting(true);
+    setCategoryError("");
+    try {
+      await updateCategory(token, catId, payload);
+      const result = await getAllCategories(token);
+      setCategories(Array.isArray(result?.data) ? result.data : []);
+      return true;
+    } catch (err) {
+      setCategoryError(err.message || "Error al modificar la categoría");
+      throw new Error(err.message || "Error al modificar la categoría");
+    } finally {
+      setCategorySubmitting(false);
+    }
+  }, [token]);
+
   const removeCategory = useCallback(async (catId) => {
     try {
       await deleteCategory(token, catId);
@@ -58,5 +74,6 @@ export function useCategoriesData(token) {
     fetchCategories,
     addCategory,
     removeCategory,
+    editCategory,
   };
 }

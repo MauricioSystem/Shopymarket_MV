@@ -12,8 +12,10 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Navbar from "@/components/layout/Navbar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { AUTH_ROLES } from "@/utils/authRoles";
 import BrandMark from "@/components/ui/BrandMark";
 import Button from "@/components/ui/Button";
@@ -117,7 +119,7 @@ const AUDIENCE_CARDS = [
   },
 ];
 
-function ProductCard({ product, onBuy }) {
+function ProductCard({ product, onBuy, onClick }) {
   const API_BASE = (
     import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
   ).replace(/\/$/, "");
@@ -128,7 +130,7 @@ function ProductCard({ product, onBuy }) {
     : null;
 
   return (
-    <article className="group rounded-2xl border border-[rgba(201,150,12,0.1)] bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-[0_12px_30px_-8px_rgba(200,150,12,0.12)] hover:-translate-y-1 transition-all duration-300">
+    <article className="group rounded-md border border-[rgba(201,150,12,0.1)] bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-[0_12px_30px_-8px_rgba(200,150,12,0.12)] hover:-translate-y-1 transition-all duration-300">
       <div className="h-40 bg-[#f5f0e4] overflow-hidden">
         {imageUrl ? (
           <img
@@ -158,7 +160,7 @@ function ProductCard({ product, onBuy }) {
           </p>
           <button
             type="button"
-            onClick={onBuy}
+            onClick={(e) => { e.stopPropagation(); if (onBuy) onBuy(product); }}
             className="text-xs font-bold rounded-full bg-[#1a1200] text-[#fff8df] px-3 py-1.5 hover:opacity-80 transition-opacity"
           >
             Comprar
@@ -195,7 +197,7 @@ function StoreCard({ store, onClick }) {
   return (
     <article
       onClick={onClick}
-      className="group cursor-pointer rounded-2xl overflow-hidden border border-[rgba(201,150,12,0.12)] shadow-sm hover:shadow-[0_12px_30px_-8px_rgba(200,150,12,0.1)] hover:-translate-y-1 transition-all duration-300"
+      className="group cursor-pointer rounded-md overflow-hidden border border-[rgba(201,150,12,0.12)] shadow-sm hover:shadow-[0_12px_30px_-8px_rgba(200,150,12,0.1)] hover:-translate-y-1 transition-all duration-300"
       style={{ background: store.background_color || "#fff" }}
     >
       <div className="h-24 bg-gradient-to-br from-[rgba(245,211,103,0.15)] to-transparent overflow-hidden">
@@ -215,13 +217,13 @@ function StoreCard({ store, onClick }) {
           <img
             src={logoUrl}
             alt={`Logo de ${store.name}`}
-            className="h-10 w-10 rounded-xl object-cover border border-white/20 shrink-0"
+            className="h-10 w-10 rounded object-cover border border-white/20 shrink-0"
             onError={(e) => {
               e.target.style.display = "none";
             }}
           />
         ) : (
-          <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center text-lg shrink-0">
+          <div className="h-10 w-10 rounded bg-white/20 flex items-center justify-center text-lg shrink-0">
             🏪
           </div>
         )}
@@ -259,7 +261,7 @@ function ServiceCard({ service, onViewProfile }) {
     : null;
 
   return (
-    <article className="group rounded-2xl border border-[rgba(99,102,241,0.15)] bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-[0_12px_30px_-8px_rgba(99,102,241,0.15)] hover:-translate-y-1 transition-all duration-300 flex flex-col">
+    <article className="group rounded-md border border-[rgba(99,102,241,0.15)] bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-[0_12px_30px_-8px_rgba(99,102,241,0.15)] hover:-translate-y-1 transition-all duration-300 flex flex-col">
       {/* Imagen o placeholder */}
       <div className="h-40 bg-gradient-to-br from-[#ede9fe] to-[#e0e7ff] overflow-hidden shrink-0">
         {imageUrl ? (
@@ -311,7 +313,7 @@ function LoginModal({ onClose, onLogin }) {
       onClick={onClose}
     >
       <div
-        className="rounded-3xl border border-[rgba(201,150,12,0.2)] bg-[#fffdf7] p-8 shadow-2xl max-w-sm w-full space-y-5"
+        className="rounded-lg border border-[rgba(201,150,12,0.2)] bg-[#fffdf7] p-8 shadow-2xl max-w-sm w-full space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center space-y-2">
@@ -345,146 +347,11 @@ function LoginModal({ onClose, onLogin }) {
   );
 }
 
-function Navbar({
-  isAuthenticated,
-  user,
-  role,
-  onLogin,
-  onProfile,
-  onDashboard,
-  onLogout,
-  onNavigate,
-}) {
-  const isCustomer = role === AUTH_ROLES.CUSTOMER;
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-[rgba(201,150,12,0.12)] bg-[#fffdf7]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <button
-          type="button"
-          onClick={() => onNavigate("home")}
-          className="flex items-center gap-3"
-          aria-label="Ir al inicio"
-        >
-          <BrandMark compact tone="dark" />
-        </button>
-
-        <nav
-          className="hidden items-center gap-6 md:flex"
-          aria-label="Navegación principal"
-        >
-          <button
-            type="button"
-            onClick={() => onNavigate("home")}
-            className="text-sm font-semibold text-[#1a1200] hover:text-[#c8960c] transition-colors"
-          >
-            Inicio
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate("market")}
-            className="text-sm font-semibold text-[#6f6041] hover:text-[#c8960c] transition-colors"
-          >
-            Explorar Mercado
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-3">
-          {!isAuthenticated ? (
-            <Button
-              type="button"
-              onClick={onLogin}
-              className="rounded-full bg-[#1a1200] px-5 py-2 text-xs font-bold text-[#fff8df] hover:opacity-90 shadow-[0_4px_16px_rgba(26,18,0,0.15)]"
-            >
-              Ingresar
-            </Button>
-          ) : (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={onProfile}
-                className="hidden flex-col items-end sm:flex group select-none"
-              >
-                <p className="text-xs font-semibold text-[#1a1200] group-hover:text-[#c8960c] transition-colors">
-                  {getDisplayName(user)}
-                </p>
-                <p className="text-[0.6rem] text-[#6f6041]">
-                  {getRoleLabel(role)}
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={onProfile}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(201,150,12,0.2)] bg-white text-xs font-bold overflow-hidden shrink-0 hover:border-[#c8960c] transition-all"
-                aria-label="Ver perfil"
-              >
-                {user?.profile_image_url ? (
-                  <img
-                    src={getProfileImageUrl(user.profile_image_url)}
-                    alt="Perfil"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  user?.first_name?.[0]?.toUpperCase() || "?"
-                )}
-              </button>
-
-              {isCustomer && (
-                <button
-                  id="cart-btn-home"
-                  type="button"
-                  onClick={onDashboard}
-                  aria-label="Carrito de compras"
-                  title="Carrito (próximamente)"
-                  className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(201,150,12,0.2)] bg-white hover:border-[#c8960c] hover:bg-[#fff8df] transition-all"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.8}
-                    stroke="currentColor"
-                    className="w-4 h-4 text-[#1a1200]"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                    />
-                  </svg>
-                </button>
-              )}
-
-              {!isCustomer && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={onDashboard}
-                  className="rounded-full border border-[rgba(201,150,12,0.2)] px-4 py-2 text-xs font-bold"
-                >
-                  Mi Panel
-                </Button>
-              )}
-              <button
-                type="button"
-                onClick={onLogout}
-                className="text-xs font-bold text-[#6f6041] hover:text-red-500 transition-colors"
-              >
-                Salir
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
 
 export default function HomePage() {
   const { isAuthenticated, user, role, logout, capabilities } = useAuth();
+  const { addToCart, openCart } = useCart();
   const routerNavigate = useNavigate();
 
   const [activeSlide, setActiveSlide] = useState(0);
@@ -493,6 +360,7 @@ export default function HomePage() {
   const [stores, setStores] = useState([]);
   // Servicios individuales para su propia sección (tipo catálogo)
   const [services, setServices] = useState([]);
+  const [allProfiles, setAllProfiles] = useState([]);
   const [loadingMarket, setLoadingMarket] = useState(true);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -517,6 +385,7 @@ export default function HomePage() {
         .map(p => ({ ...p, isServiceProfile: true }));
 
       setStores([...activeStores, ...activeProfiles].slice(0, 6));
+      setAllProfiles(activeProfiles);
 
       // ── Servicios individuales activos (catálogo) ──
       const allServices = Array.isArray(servicesResult) ? servicesResult
@@ -583,25 +452,11 @@ export default function HomePage() {
     else routerNavigate(isAuthenticated ? "/dashboard/delivery" : "/register");
   };
 
-  const handleBuyProduct = () => {
-    if (isAuthenticated) {
-    } else {
-      setShowLoginModal(true);
-    }
-  };
+  const handleBuyProduct = async (product) => { if (isAuthenticated) { const success = await addToCart(product, 1); if (success) openCart(); } else { setShowLoginModal(true); } };
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(245,211,103,0.06),transparent_35%),linear-gradient(180deg,#fffdf7,#fdf9ec)] text-[#1a1200] font-sans">
-      <Navbar
-        isAuthenticated={isAuthenticated}
-        user={user}
-        role={role}
-        onLogin={() => navigate("login")}
-        onProfile={() => navigate("profile")}
-        onDashboard={() => navigate("dashboard")}
-        onLogout={logout}
-        onNavigate={navigate}
-      />
+      <Navbar />
 
       {showLoginModal && (
         <LoginModal
@@ -734,12 +589,12 @@ export default function HomePage() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-60 rounded-2xl bg-[#f5f0e4] animate-pulse"
+                className="h-60 rounded-md bg-[#f5f0e4] animate-pulse"
               />
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[rgba(201,150,12,0.2)] bg-white/50 p-12 text-center">
+          <div className="rounded-md border border-dashed border-[rgba(201,150,12,0.2)] bg-white/50 p-12 text-center">
             <p className="text-3xl mb-3">📦</p>
             <p className="text-sm text-[#6f6041]">
               Aún no hay productos publicados. ¡Sé el primero en vender!
@@ -757,11 +612,7 @@ export default function HomePage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onBuy={handleBuyProduct}
-              />
+              <ProductCard key={product.id} product={product} onBuy={handleBuyProduct} onClick={() => routerNavigate(`/product/${product.id}`)} />
             ))}
           </div>
         )}
@@ -798,7 +649,7 @@ export default function HomePage() {
               {Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-40 rounded-2xl bg-[#f5f0e4] animate-pulse"
+                  className="h-40 rounded-md bg-[#f5f0e4] animate-pulse"
                 />
               ))}
             </div>
@@ -855,11 +706,11 @@ export default function HomePage() {
           {loadingMarket ? (
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-60 rounded-2xl bg-[#ede9fe]/50 animate-pulse" />
+                <div key={i} className="h-60 rounded-md bg-[#ede9fe]/50 animate-pulse" />
               ))}
             </div>
           ) : services.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[rgba(99,102,241,0.2)] bg-white/50 p-12 text-center">
+            <div className="rounded-md border border-dashed border-[rgba(99,102,241,0.2)] bg-white/50 p-12 text-center">
               <p className="text-3xl mb-3">🔧</p>
               <p className="text-sm text-[#6f6041]">
                 Aún no hay servicios publicados. ¡Sé el primero en ofrecer uno!
@@ -867,16 +718,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {services.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  onViewProfile={() => {
-                    // Navega al perfil del proveedor del servicio
-                    routerNavigate(`/service/${encodeURIComponent(service.name)}`);
-                  }}
-                />
-              ))}
+              {services.map((service) => { const profileForService = allProfiles.find(p => Number(p.id) === Number(service.service_profile_id)); return <ServiceCard key={service.id} service={service} onViewProfile={() => { if (profileForService) { routerNavigate(`/service/${encodeURIComponent(profileForService.name)}`); } }} onClick={() => routerNavigate(`/service-detail/${service.id}`)} />; })}
             </div>
           )}
         </section>
@@ -906,7 +748,7 @@ export default function HomePage() {
           {AUDIENCE_CARDS.map((card) => (
             <div
               key={card.id}
-              className={`group flex flex-col justify-between rounded-3xl border ${card.theme.border} ${card.theme.bg} p-8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm`}
+              className={`group flex flex-col justify-between rounded-lg border ${card.theme.border} ${card.theme.bg} p-8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm`}
             >
               <div className="space-y-5">
                 <div className="text-4xl">{card.icon}</div>
@@ -997,3 +839,6 @@ export default function HomePage() {
     </div>
   );
 }
+
+
+

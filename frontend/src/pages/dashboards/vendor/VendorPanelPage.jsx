@@ -19,7 +19,7 @@ const VENDOR_MODES = [
 ];
 
 function VendorPanelPage() {
-  const { token, setCurrentView } = useAuth();
+  const { token } = useAuth();
   
   const {
     mode,
@@ -75,7 +75,7 @@ function VendorPanelPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <VendorPanelHeader setCurrentView={setCurrentView} loadData={loadData} />
+      <VendorPanelHeader loadData={loadData} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="grid gap-6 xl:grid-cols-[280px_1fr]">

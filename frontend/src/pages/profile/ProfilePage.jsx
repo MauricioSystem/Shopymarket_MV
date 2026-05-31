@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import BrandMark from "@/components/ui/BrandMark";
@@ -64,7 +65,8 @@ const MapPinIcon = ({ className }) => (
 );
 
 export default function ProfilePage() {
-  const { user, role, token, logout, setCurrentView } = useAuth();
+  const { user, role, token, logout, capabilities } = useAuth();
+  const navigate = useNavigate();
   const roleLabel = getRoleLabel(role);
 
   const handleDeleteAccount = async () => {
@@ -180,7 +182,13 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3">
             <Button
               type="button"
-              onClick={() => setCurrentView("dashboard")}
+              onClick={() => {
+                if (role === AUTH_ROLES.CUSTOMER) {
+                  navigate("/home");
+                } else {
+                  navigate("/dashboard");
+                }
+              }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${theme.secondaryBtnClass}`}
             >
               <ArrowLeftIcon className="h-4 w-4" />
@@ -213,15 +221,17 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div className="mt-5 flex flex-col gap-2.5 w-full">
-                <Button
-                  onClick={() => setCurrentView("edit-profile")}
-                  className={`flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold w-full ${theme.buttonClass}`}
-                >
-                  <EditIcon className="h-3.5 w-3.5" />
-                  <span>Editar Perfil</span>
-                </Button>
-              </div>
+              {!capabilities?.canAccessAdminPanel && (
+                <div className="mt-5 flex flex-col gap-2.5 w-full">
+                  <Button
+                    onClick={() => navigate("/profile/edit")}
+                    className={`flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold w-full ${theme.buttonClass}`}
+                  >
+                    <EditIcon className="h-3.5 w-3.5" />
+                    <span>Editar Perfil</span>
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 w-full">

@@ -5,11 +5,17 @@ import App from "./App";
 import "./styles/index.css";
 import { AuthProvider } from "./context/AuthContext";
 
+import { CartProvider } from "./context/CartContext";
+import MiniCart from "./components/cart/MiniCart";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <CartProvider>
+          <App />
+          <MiniCart />
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import BrandMark from "@/components/ui/BrandMark";
@@ -32,7 +33,8 @@ const PhotoIcon = ({ className }) => (
 );
 
 export default function EditProfilePage() {
-  const { token, user, role, setCurrentView, updateSessionUser } = useAuth();
+  const { token, user, role, updateSessionUser } = useAuth();
+  const navigate = useNavigate();
   
   const [firstName, setFirstName] = useState(user?.first_name || "");
   const [lastName, setLastName] = useState(user?.last_name || "");
@@ -240,7 +242,7 @@ export default function EditProfilePage() {
         updateSessionUser(result.data);
         
         setTimeout(() => {
-          setCurrentView("profile");
+          navigate("/profile");
         }, 1500);
       } else {
         setApiError(result.message || "Error al actualizar el perfil.");
@@ -276,7 +278,7 @@ export default function EditProfilePage() {
             <Button
               type="button"
               disabled={submitting}
-              onClick={() => setCurrentView("profile")}
+              onClick={() => navigate("/profile")}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${theme.secondaryBtnClass}`}
             >
               <ArrowLeftIcon className="h-4 w-4" />
@@ -476,7 +478,7 @@ export default function EditProfilePage() {
               <Button
                 type="button"
                 disabled={submitting}
-                onClick={() => setCurrentView("profile")}
+                onClick={() => navigate("/profile")}
                 className={`rounded-xl px-5 py-3 text-xs font-bold ${theme.secondaryBtnClass}`}
               >
                 Cancelar

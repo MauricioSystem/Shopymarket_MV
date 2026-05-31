@@ -21,9 +21,11 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
     fetchCategories,
     addCategory,
     removeCategory,
+    editCategory,
   } = useCategoriesData(token);
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: "", type: "product", description: "" });
 
   useEffect(() => {
@@ -48,7 +50,15 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
   }, [categories, search]);
 
   const handleOpenAddCategoryModal = () => {
+    setEditingCategory(null);
     setCategoryForm({ name: "", type: "product", description: "" });
+    setCategoryError("");
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleOpenEditCategoryModal = (cat) => {
+    setEditingCategory(cat);
+    setCategoryForm({ name: cat.name, type: cat.type, description: cat.description || "" });
     setCategoryError("");
     setIsCategoryModalOpen(true);
   };
@@ -61,13 +71,22 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
     }
 
     try {
-      await addCategory({
-        name: categoryForm.name.trim(),
-        type: categoryForm.type,
-        description: categoryForm.description.trim(),
-      });
+      if (editingCategory) {
+        await editCategory(editingCategory.id, {
+          name: categoryForm.name.trim(),
+          type: categoryForm.type,
+          description: categoryForm.description.trim(),
+        });
+      } else {
+        await addCategory({
+          name: categoryForm.name.trim(),
+          type: categoryForm.type,
+          description: categoryForm.description.trim(),
+        });
+      }
       setIsCategoryModalOpen(false);
       setCategoryForm({ name: "", type: "product", description: "" });
+      setEditingCategory(null);
     } catch (err) {
       // Error handled by hook state
     }
@@ -184,6 +203,16 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
+                          onClick={() => handleOpenEditCategoryModal(cat)}
+                          className="text-white/40 hover:text-[#f5d367] p-1.5 rounded-lg hover:bg-white/5 transition-all"
+                          title="Editar categoría"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDelete(cat.id)}
                           className="text-white/40 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-all"
                           title="Eliminar categoría"
@@ -212,7 +241,9 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
 
           <div className="relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 bg-[#080f1c] shadow-2xl transition-all duration-300 flex flex-col">
             <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
-              <h3 className="text-lg font-bold text-white">Agregar Nueva Categoría</h3>
+              <h3 className="text-lg font-bold text-white">
+                {editingCategory ? "Modificar Categoría" : "Agregar Nueva Categoría"}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
@@ -311,7 +342,7 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
                   {categorySubmitting && (
                     <span className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
                   )}
-                  Crear Categoría
+                  {editingCategory ? "Guardar Cambios" : "Crear Categoría"}
                 </button>
               </div>
             </form>

@@ -56,8 +56,8 @@ export const getRoleId = (role) =>
 
 export const resolveDashboardPath = (role) => {
   const normalizedRole = normalizeFrontendRole(role);
-  if (normalizedRole === AUTH_ROLES.ADMINISTRATOR) return "/dashboard/administrator";
+  if (normalizedRole === AUTH_ROLES.ADMINISTRATOR) return "/dashboard/admin";
   if (normalizedRole === AUTH_ROLES.VENDOR) return "/dashboard/vendor";
   if (normalizedRole === AUTH_ROLES.DELIVERY) return "/dashboard/delivery";
-  return "/dashboard/customer";
+  return "/profile";
 };

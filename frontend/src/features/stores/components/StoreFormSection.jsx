@@ -246,7 +246,7 @@ export function StoreFormSection({
                         </div>
                         {existingStore && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-400">
-                                ✓ Tienda activa
+                                Publica
                             </span>
                         )}
                     </div>
@@ -367,7 +367,7 @@ export function StoreFormSection({
                         </div>
                         {existingServiceProfile && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-400">
-                                ✓ Perfil activo
+                                Publico
                             </span>
                         )}
                     </div>

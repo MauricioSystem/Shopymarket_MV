@@ -10,7 +10,7 @@ const {
 const { authenticate, authorize } = require('../../middlewares');
 
 router.use(authenticate);
-router.use(authorize('cliente'));
+// Allow all authenticated users to use the cart (customers, vendors, admins)
 
 router.get('/my-cart', getMyCart);
 router.post('/add-item', addItem);

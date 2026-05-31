@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import BrandMark from "@/components/ui/BrandMark";
 import Button from "@/components/ui/Button";
@@ -12,7 +13,8 @@ function getInitials(user) {
 }
 
 export default function CustomerDashboard() {
-  const { user, logout, role, setCurrentView } = useAuth();
+  const { user, logout, role } = useAuth();
+  const navigate = useNavigate();
   const roleLabel = getRoleLabel(role);
 
   const theme = {
@@ -64,13 +66,13 @@ export default function CustomerDashboard() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setCurrentView("market")}
+              onClick={() => navigate("/market")}
               className="rounded-[0.85rem] px-4 py-2 text-sm"
             >
               Explorar Mercado
             </Button>
             <div
-              onClick={() => setCurrentView("profile")}
+              onClick={() => navigate("/profile")}
               className="hidden flex-col items-end sm:flex cursor-pointer group select-none"
             >
               <p className="text-sm font-medium group-hover:text-[#c8960c] transition-colors">
@@ -79,7 +81,7 @@ export default function CustomerDashboard() {
               <p className="text-[0.7rem] opacity-60">{user?.email}</p>
             </div>
             <div
-              onClick={() => setCurrentView("profile")}
+              onClick={() => navigate("/profile")}
               className={`flex h-8 w-8 items-center justify-center rounded-full border border-black/5 bg-neutral-100 text-xs font-bold overflow-hidden shrink-0 cursor-pointer hover:border-neutral-300 transition-colors ${theme.accentText}`}
             >
               {user?.profile_image_url ? (
@@ -129,7 +131,13 @@ export default function CustomerDashboard() {
               </div>
               <button
                 type="button"
-                onClick={widget.title === "Explorar Mercado" ? () => setCurrentView("market") : undefined}
+                onClick={
+                  widget.title === "Explorar Mercado"
+                    ? () => navigate("/market")
+                    : widget.title === "Perfil y Direcciones"
+                    ? () => navigate("/profile")
+                    : undefined
+                }
                 className={`mt-6 w-full rounded-[0.85rem] py-2.5 text-xs font-semibold transition-all ${theme.secondaryBtnClass}`}
               >
                 {widget.actionText}

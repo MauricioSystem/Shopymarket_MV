@@ -22,9 +22,6 @@ export function VendorCategoriesSection({
                         {categories.map(c => (
                             <div key={c.id} className="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/5 text-xs">
                                 <span className="font-medium text-white">{c.name}</span>
-                                <span className={`px-2 py-0.5 rounded text-[0.6rem] font-bold uppercase ${c.type === 'product' ? 'bg-[#f5d367]/10 text-[#f5d367]' : 'bg-blue-500/10 text-blue-400'}`}>
-                                    {c.type === 'product' ? 'Producto' : 'Servicio'}
-                                </span>
                             </div>
                         ))}
                     </div>
@@ -33,7 +30,7 @@ export function VendorCategoriesSection({
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
                 <div>
-                    <h2 className="text-lg font-bold text-white">🏷️ Subcategorías Personalizadas</h2>
+                    <h2 className="text-lg font-bold text-white">🏷️ Crea tus Categorias Personalizadas</h2>
                     <p className="text-xs text-white/40 mt-1">Crea subcategorías específicas para organizar los productos de tu tienda.</p>
                 </div>
 
@@ -50,9 +47,9 @@ export function VendorCategoriesSection({
                         alert(err.message);
                     }
                 }} className="space-y-4">
-                    <Input label="Nombre de la subcategoría *" name="sub_name" required placeholder="Ej: Camisas, Zapatos..." />
+                    <Input label="Categorías para tu Tienda*" name="sub_name" required placeholder="Ej: Camisas, Zapatos..." />
                     <Select
-                        label="Categoría Padre *"
+                        label="Categoría de Busqueda*"
                         name="sub_cat"
                         required
                         options={[
@@ -64,28 +61,6 @@ export function VendorCategoriesSection({
                         Crear Subcategoría
                     </Button>
                 </form>
-
-                <div className="border-t border-white/5 pt-4 space-y-3">
-                    <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Existentes ({subcategories.length})</p>
-                    <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
-                        {subcategories.map(s => {
-                            const parent = categories.find(c => Number(c.id) === Number(s.category_id));
-                            return (
-                                <div key={s.id} className="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/5 text-xs">
-                                    <div>
-                                        <p className="font-medium text-white">{s.name}</p>
-                                        <p className="text-[0.6rem] text-white/30">Padre: {parent?.name || 'Desconocido'}</p>
-                                    </div>
-                                    {s && s.store_id && (
-                                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[0.6rem] font-bold">
-                                            Esta Tienda
-                                        </span>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
             </div>
         </div>
     );

@@ -187,22 +187,24 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          {activeNav === "resumen" && <ResumenView stats={stats} />}
+          <div className={activeNav === "resumen" ? "block" : "hidden"}>
+            <ResumenView stats={stats} />
+          </div>
           
-          {activeNav === "categorias" && (
+          <div className={activeNav === "categorias" ? "block" : "hidden"}>
             <CategoriesSection token={token} search={search} />
-          )}
+          </div>
 
-          {activeNav === "tiendas" && (
+          <div className={activeNav === "tiendas" ? "block" : "hidden"}>
             <StoresSection
               token={token}
               search={search}
               onEditStoreAndProducts={setSelectedVendorUser}
               onStoresChange={setStores}
             />
-          )}
+          </div>
 
-          {!["resumen", "categorias", "tiendas"].includes(activeNav) && (
+          <div className={!["resumen", "categorias", "tiendas"].includes(activeNav) ? "block" : "hidden"}>
             <UsersSection
               token={token}
               search={search}
@@ -210,7 +212,7 @@ export default function AdminDashboard() {
               setRoleFilter={setRoleFilter}
               onUsersChange={setUsers}
             />
-          )}
+          </div>
         </div>
       </main>
     </div>
