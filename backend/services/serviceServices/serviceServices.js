@@ -118,10 +118,69 @@ const deleteService = async (serviceId) => {
     }
 };
 
+//NUEVO: Para que los clientes reserven servicios BREVO
+const bookService = async (userId, serviceId, bookingData) => {
+    try {
+        const userModel = require('../../models/userModel');
+        const serviceProfileModel = require('../../models/serviceProfileModel');
+        const emailService = require('../emailService/emailService');
+        const pool = require('../../src/db/database');
+
+        const { date, dateType, dateEnd, time, notes } = bookingData;
+
+        // 1. Get user
+        const user = await userModel.getUserById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // 2. Get service
+        const service = await serviceModel.getServiceById(serviceId);
+        if (!service) {
+            throw new Error('Service not found');
+        }
+
+        // 3. Get provider (service profile)
+        const provider = await serviceProfileModel.getServiceProfileById(service.service_profile_id);
+
+        // Sincronizar contacto al CRM (por si es un usuario antiguo)
+        try {
+            await emailService.addContactToBrevo(user);
+        } catch (crmErr) {
+            console.error('[Brevo CRM] Error al sincronizar contacto en reserva:', crmErr.message);
+        }
+
+        // 4. Increment contracts_count in database
+        await pool.query(
+            'UPDATE services SET contracts_count = contracts_count + 1 WHERE id = $1',
+            [serviceId]
+        );
+
+        // 5. Send Brevo email (silently with try/catch)
+        try {
+            await emailService.sendServiceBookingEmail(user, service, provider, bookingData);
+        } catch (emailErr) {
+            console.error('[Brevo] ❌ Error enviando email de reserva de servicio:', emailErr.message);
+        }
+
+        return {
+            success: true,
+            message: 'Service reservation requested successfully'
+        };
+    } catch (error) {
+        throw {
+            success: false,
+            message: 'Error booking service',
+            error: error.message
+        };
+    }
+};
+
 module.exports = {
     createService,
     getAllServices,
     getServiceById,
     updateService,
     deleteService,
+    bookService,
 };

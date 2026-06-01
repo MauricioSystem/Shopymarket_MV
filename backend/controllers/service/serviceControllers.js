@@ -65,10 +65,22 @@ const deleteService = async (req, res) => {
     }
 };
 
+// NUEVO: Controller para crear una reservación de servicio
+const bookService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await serviceService.bookService(req.user.id, id, req.body);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(400).json(error);
+    }
+};
+
 module.exports = {
     getAllServices,
     getServiceById,
     createService,
     updateService,
     deleteService,
+    bookService,
 };

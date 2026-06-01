@@ -1,5 +1,9 @@
 const orderModel = require('../../models/orderModel');
 const cartModel = require('../../models/cartModel');
+//NUEVO: Para enviar emails por BREVO
+const userModel = require('../../models/userModel');
+const storeModel = require('../../models/storeModel');
+const emailService = require('../emailService/emailService');
 
 const placeOrderFromCart = async (userId, orderInfo) => {
     try {
@@ -24,7 +28,7 @@ const placeOrderFromCart = async (userId, orderInfo) => {
         }
 
         const storeId = items[0].store_id;
-        
+
         let subtotal = 0;
         const formattedItems = items.map(item => {
             const price = parseFloat(item.unit_price);
@@ -59,12 +63,57 @@ const placeOrderFromCart = async (userId, orderInfo) => {
 
         const order = await orderModel.createOrderInTransaction(orderData);
 
+        // ── Brevo: email de confirmación con datos completos ──
+        console.log(`[Brevo] 🛒 Pedido #${order.id} creado — preparando email para userId=${userId}`);
+        try {
+            const [user, store] = await Promise.all([
+                userModel.getUserById(userId),
+                storeId ? storeModel.getStoreById(storeId) : Promise.resolve(null),
+            ]);
+
+            console.log(`[Brevo] Usuario encontrado: ${user ? user.email : 'NULL'}`);
+            console.log(`[Brevo] Tienda encontrada: ${store ? store.name : 'NULL (sin tienda)'}`);
+
+            if (user) {
+                // Sincronizar contacto al CRM (por si es un usuario antiguo)
+                try {
+                    await emailService.addContactToBrevo(user);
+                } catch (crmErr) {
+                    console.error('[Brevo CRM] Error al sincronizar contacto en pedido:', crmErr.message);
+                }
+
+                const emailItems = items.map(item => ({
+                    product_name: item.product_name || item.name || 'Producto',
+                    quantity: parseInt(item.quantity, 10),
+                    unit_price: parseFloat(item.unit_price),
+                    subtotal: parseFloat(item.unit_price) * parseInt(item.quantity, 10),
+                }));
+
+                console.log(`[Brevo] Items del email: ${emailItems.length} producto(s)`);
+                emailItems.forEach(i => console.log(`  - ${i.product_name} x${i.quantity} = Bs.${i.subtotal}`));
+
+                const orderWithStore = {
+                    ...order,
+                    store_name: store?.name || null,
+                    store_city: store?.city || null,
+                    store_address: store?.address || null,
+                };
+
+                await emailService.sendOrderConfirmationEmail(user, orderWithStore, emailItems);
+            } else {
+                console.warn(`[Brevo] ⚠️ Usuario ${userId} no encontrado — email NO enviado`);
+            }
+        } catch (emailErr) {
+            console.error('[Brevo] ❌ Error en email de pedido:', emailErr.message, emailErr.stack);
+        }
+
         return {
             success: true,
             data: order,
             message: 'Order created successfully'
         };
     } catch (error) {
+        console.error('[placeOrderFromCart] ❌ Error general al crear el pedido:', error);
         throw {
             success: false,
             message: 'Error placing order',
@@ -169,6 +218,19 @@ const changeOrderStatus = async (orderId, status, userId, userRole) => {
         }
 
         const updatedOrder = await orderModel.updateOrderStatus(orderId, status);
+
+        // ── Brevo: notificar al cliente del cambio de estado (no bloquea el flujo) ──
+        try {
+            if (updatedOrder && order.customer_user_id) {
+                const user = await userModel.getUserById(order.customer_user_id);
+                if (user) {
+                    emailService.sendOrderStatusUpdateEmail(user, updatedOrder);
+                }
+            }
+        } catch (emailErr) {
+            console.error('[Brevo] Error preparando email de estado:', emailErr.message);
+        }
+
         return {
             success: true,
             data: updatedOrder,

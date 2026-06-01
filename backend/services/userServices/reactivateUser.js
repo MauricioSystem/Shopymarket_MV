@@ -2,6 +2,8 @@ const userModel = require('../../models/userModel');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { validateEmail } = require('../validators');
+//NUEVO: PARA BREVO
+const emailService = require('../emailService/emailService');
 
 const reactivateUser = async (userData) => {
     try {
@@ -49,6 +51,10 @@ const reactivateUser = async (userData) => {
         const restoredUser = await userModel.reactivateUser(user.id);
         const roles = await userModel.getUserRoles(user.id);
         const primaryRole = roles[0]?.name || null;
+
+        // ── Brevo: re-sincronizar contacto y enviar email de reactivación ──
+        emailService.addContactToBrevo(restoredUser);
+        emailService.sendAccountReactivatedEmail(restoredUser);
 
         return {
             success: true,

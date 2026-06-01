@@ -6,6 +6,7 @@ const {
     createService,
     updateService,
     deleteService,
+    bookService,
 } = require('../../controllers/service/serviceControllers');
 const { authenticate, authorize } = require('../../middlewares');
 // CAMBIO: Importar middleware para subida física de imágenes de servicios
@@ -15,6 +16,8 @@ router.get('/', getAllServices);
 router.get('/:id', getServiceById);
 
 router.use(authenticate);
+// NUEVO: Ruta protegida para que los clientes reserven servicios
+router.post('/:id/book', authorize('cliente'), bookService);
 // CAMBIO: Se añadió 'uploadServiceImage.single("image")' para aceptar subidas de imágenes
 router.post('/', authorize('admin', 'super_admin'), uploadServiceImage.single('image'), createService);
 // CAMBIO: Se añadió 'uploadServiceImage.single("image")' para aceptar subidas de imágenes en la actualización

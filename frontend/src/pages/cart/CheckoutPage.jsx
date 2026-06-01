@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/layout/Navbar';
 import Button from '../../components/ui/Button';
 import { API_BASE_URL } from "@/config/appSettings";
+import { createOrder } from '../../services/orderApi';
 
 const API_BASE = API_BASE_URL;
 const getImageUrl = (url) => url ? (url.startsWith("http") ? url : `${API_BASE}${url}`) : null;
@@ -257,8 +258,12 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const { clearCart } = useCart();
+    const { refreshCart } = useCart();
+  const { token } = useAuth();
+
+  const placingRef = useRef(false);
 
   const allPaymentMethods = [
     { value: 'card', icon: '💳', label: 'Tarjeta de crédito / débito' },
@@ -272,27 +277,49 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
     : allPaymentMethods;
 
   const [finalTotal, setFinalTotal] = useState(0);
-  const [finalItems, setFinalItems] = useState([]);
+  
+  const shippingCost = deliveryData.method === 'delivery' ? 15 : 0;
+  const finalCalculatedTotal = cartTotal + shippingCost;
 
   const isCardValid = paymentData.card_number?.length > 10 && paymentData.card_expiry && paymentData.card_cvv && paymentData.card_name;
   const canSubmit = agreedToTerms && paymentData.method && (paymentData.method !== 'card' || isCardValid);
 
   const handlePlaceOrder = async () => {
-    if (!canSubmit) return;
-    setPlacing(true);
-    // Save the values securely
-    setFinalTotal(cartTotal);
-    setFinalItems(cartItems);
+    if (!canSubmit || placingRef.current) return;
+    placingRef.current = true;
+     setPlacing(true);
+        setError(null);
     
-    // Simular procesamiento (aquí iría la integración con pasarela real)
-    await new Promise(r => setTimeout(r, 1800));
-    
-    setPlacing(false);
-    setPlaced(true);
+    try {
+      const orderPayload = {
+        order_type: deliveryData.method,
+        delivery_address: deliveryData.method === 'delivery'
+          ? `${deliveryData.address}, ${deliveryData.city}${deliveryData.notes ? ` (Ref: ${deliveryData.notes})` : ''}`
+          : null,
+        shipping_cost: shippingCost,
+        discount: 0
+      };
+
+      const response = await createOrder(orderPayload, token);
+      
+      if (response && response.success) {
+        setFinalTotal(response.data.total || finalCalculatedTotal);
+        // Refresh local cart state (active cart is now completed in backend)
+        await refreshCart();
+        setPlaced(true);
+      } else {
+        throw new Error(response?.message || 'Error al procesar el pedido');
+      }
+    } catch (err) {
+      console.error("Error al realizar pedido:", err);
+      setError(err.message || 'Ocurrió un error inesperado al procesar el pedido. Por favor intenta de nuevo.');
+      placingRef.current = false;
+    } finally {
+      setPlacing(false);
+    }
   };
 
   const handleFinish = () => {
-    clearCart();
     navigate('/market');
   };
 
@@ -310,8 +337,7 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
           <div className="border-t border-slate-200 pt-3 mt-1">
             <p className="flex justify-between items-center gap-6">
               <span>Total Pagado:</span>
-              {/* Use finalTotal if available, fallback to cartTotal if finalTotal hasn't captured yet */}
-              <b className="text-[#c8960c] text-xl">Bs {Number(finalTotal || cartTotal).toFixed(2)}</b>
+              <b className="text-[#c8960c] text-xl">Bs {Number(finalTotal || finalCalculatedTotal).toFixed(2)}</b>
             </p>
           </div>
         </div>
@@ -384,15 +410,21 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
             <p className="text-sm font-bold text-purple-800 mb-3">📱 Escanea el QR con tu app bancaria</p>
             <div className="w-40 h-40 mx-auto flex items-center justify-center overflow-hidden rounded-xl border border-purple-300 bg-white shadow-sm p-2">
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PagoShopyMarket_Bs${Number(cartTotal).toFixed(2)}`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PagoShopyMarket_Bs${Number(finalCalculatedTotal).toFixed(2)}`} 
                 alt="Código QR de Pago" 
                 className="w-full h-full object-cover rounded-lg"
               />
             </div>
-            <p className="text-xs text-purple-600 mt-3 font-bold">Monto a pagar: Bs {Number(cartTotal).toFixed(2)}</p>
+            <p className="text-xs text-purple-600 mt-3 font-bold">Monto a pagar: Bs {Number(finalCalculatedTotal).toFixed(2)}</p>
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 text-sm animate-fade-in">
+          ⚠️ {error}
+        </div>
+      )}
 
       {/* Resumen final */}
       <div className="bg-white rounded-3xl border border-[rgba(201,150,12,0.2)] p-6 md:p-8 shadow-sm space-y-5">
@@ -400,8 +432,8 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
 
         <div className="space-y-2.5 text-sm text-slate-600">
           <div className="flex justify-between"><span>Subtotal ({cartItems.length} artículos)</span><span className="font-bold">Bs {Number(cartTotal).toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Envío</span><span className="font-bold text-[#c8960c]">{deliveryData.method === 'pickup' ? 'Gratis (recogida)' : 'Por calcular'}</span></div>
-          <div className="flex justify-between text-base pt-2 border-t border-slate-100"><span className="font-bold text-slate-900">Total</span><span className="font-extrabold text-[#c8960c] text-xl">Bs {Number(cartTotal).toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Envío</span><span className="font-bold text-[#c8960c]">{deliveryData.method === 'pickup' ? 'Gratis (recogida)' : `Bs ${Number(shippingCost).toFixed(2)}`}</span></div>
+          <div className="flex justify-between text-base pt-2 border-t border-slate-100"><span className="font-bold text-slate-900">Total</span><span className="font-extrabold text-[#c8960c] text-xl">Bs {Number(finalCalculatedTotal).toFixed(2)}</span></div>
         </div>
 
         <div className="space-y-3 pt-2">
@@ -467,7 +499,7 @@ export default function CheckoutPage() {
 
   const [paymentData, setPaymentData] = useState({ method: '' });
 
-  if (loadingCart) {
+  if (loadingCart && cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-[#faf9f5]">
         <Navbar />

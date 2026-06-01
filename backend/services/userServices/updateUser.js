@@ -1,5 +1,8 @@
 const userModel = require('../../models/userModel');
 const bcrypt = require('bcryptjs');
+//NUEVO: para BREVO
+const emailService = require('../emailService/emailService');
+
 const {
     validatePhone,
     validateEmail,
@@ -52,6 +55,9 @@ const updateUser = async (userId, userData) => {
         }
 
         const updatedUser = await userModel.updateUser(userId, updateData);
+
+        // ── Brevo: actualizar contacto en el CRM ──
+        emailService.addContactToBrevo(updatedUser);
 
         return {
             success: true,

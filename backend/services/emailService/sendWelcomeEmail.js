@@ -1,0 +1,30 @@
+const { getClient } = require('./brevoClient');
+const welcomeTemplate = require('../../templates/welcomeTemplate');
+
+const SENDER = {
+    email: process.env.BREVO_SENDER_EMAIL,
+    name: process.env.BREVO_SENDER_NAME,
+};
+
+/**
+ * Envía email de bienvenida al nuevo usuario registrado.
+ * @param {Object} user - Datos del usuario
+ */
+const sendWelcomeEmail = async (user) => {
+    try {
+        const client = getClient();
+
+        await client.transactionalEmails.sendTransacEmail({
+            sender: SENDER,
+            to: [{ email: user.email, name: `${user.first_name} ${user.last_name || ''}`.trim() }],
+            subject: '¡Bienvenido/a a ShopyMarket! 🎉',
+            htmlContent: welcomeTemplate(user),
+        });
+
+        console.log(`[Brevo Email] ✅ Bienvenida enviada a: ${user.email}`);
+    } catch (error) {
+        console.error('[Brevo Email] ❌ Error al enviar bienvenida:', JSON.stringify(error.body || error.message));
+    }
+};
+
+module.exports = sendWelcomeEmail;

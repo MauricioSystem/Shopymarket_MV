@@ -5,6 +5,8 @@ const {
     validateEmail,
     validatePassword,
 } = require('../validators');
+const emailService = require('../emailService/emailService');
+
 
 const createUser = async (userData) => {
     try {
@@ -55,6 +57,10 @@ const createUser = async (userData) => {
         const primaryRole = roles[0]?.name || null;
 
         delete user.password_hash;
+
+        // ── Brevo: sincronizar contacto al CRM y enviar bienvenida (no bloquea el registro) ──
+        emailService.addContactToBrevo(user);
+        emailService.sendWelcomeEmail(user);
 
         return {
             success: true,

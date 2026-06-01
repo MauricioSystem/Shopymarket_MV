@@ -13,7 +13,7 @@ const API_BASE = API_BASE_URL;
 export default function ServiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
 
   const [service, setService] = useState(null);
   const [provider, setProvider] = useState(null);
@@ -45,6 +45,7 @@ export default function ServiceDetailPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingStep, setBookingStep] = useState(1); // 1: form, 2: processing, 3: success
   const [bookingData, setBookingData] = useState({ dateType: "single", date: null, dateEnd: null, time: "", notes: "" });
+  const [bookingError, setBookingError] = useState(null);
 
   const handleAction = () => {
     if (!isAuthenticated) {
@@ -52,15 +53,37 @@ export default function ServiceDetailPage() {
     } else {
       setShowBookingModal(true);
       setBookingStep(1);
+      setBookingError(null);
     }
   };
 
   const handleConfirmBooking = async () => {
     if (!bookingData.date || !bookingData.time) return;
     setBookingStep(2);
-    // Simular procesamiento de backend
-    await new Promise(r => setTimeout(r, 1500));
-    setBookingStep(3);
+    setBookingError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/services/${id}/book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(bookingData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setBookingStep(3);
+        } else {
+        throw new Error(result.message || result.error || "Error al realizar la reserva");
+      }
+    } catch (err) {
+      console.error("Error al agendar servicio:", err);
+      setBookingError(err.message || "Ocurrió un error al procesar tu solicitud.");
+      setBookingStep(1);
+    }
   };
 
   if (loading) {
@@ -180,6 +203,11 @@ export default function ServiceDetailPage() {
                 </div>
                 
                 <div className="space-y-4">
+                  {bookingError && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-md p-3 text-xs">
+                      ⚠️ {bookingError}
+                    </div>
+                  )}
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-xs font-bold uppercase tracking-wider text-blue-400">Fecha de servicio</label>
