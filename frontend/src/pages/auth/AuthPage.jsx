@@ -7,7 +7,9 @@ import {
   AUTH_ROLES,
   ROLE_OPTIONS,
   getRoleId,
+  isAdminLoginPath,
   normalizeFrontendRole,
+  toBackendRole,
 } from "@/utils/authRoles";
 
 const customerFormDefaults = {
@@ -34,9 +36,12 @@ const sanitizeRegisterPayload = (formData) => ({
   password: formData.password,
 });
 
-const sanitizeLoginPayload = (formData) => ({
+const sanitizeLoginPayload = (formData, accessRole) => ({
   email: formData.email.trim().toLowerCase(),
   password: formData.password,
+  role: accessRole,
+  expectedRole: toBackendRole(accessRole),
+  role_id: getRoleId(accessRole),
 });
 
 const validateForm = (formMode, formData) => {
@@ -97,6 +102,7 @@ function AuthPage() {
   const location = useLocation();
   const {
     login,
+    loginAdmin,
     register,
     reactivate,
     isVendorMode: persistedVendorMode,
@@ -113,14 +119,19 @@ function AuthPage() {
   const routerNavigate = useNavigate();
   
   // Determinar el modo basándose en la ruta
+  const isAdminLoginRoute = isAdminLoginPath(location.pathname);
+
   const getInitialFormMode = () => {
+    if (isAdminLoginRoute) return "login";
     if (location.pathname === "/register") return "register";
     return "login";
   };
 
   const [accessRole, setAccessRole] = useState(
-    normalizeFrontendRole(actionContext?.role) ||
-      (persistedVendorMode ? AUTH_ROLES.VENDOR : AUTH_ROLES.CUSTOMER),
+    isAdminLoginRoute
+      ? AUTH_ROLES.ADMINISTRATOR
+      : normalizeFrontendRole(actionContext?.role) ||
+          (persistedVendorMode ? AUTH_ROLES.VENDOR : AUTH_ROLES.CUSTOMER),
   );
   const [formMode, setFormMode] = useState(getInitialFormMode);
   const [formData, setFormData] = useState(customerFormDefaults);
@@ -138,6 +149,9 @@ function AuthPage() {
     setFormErrors({});
     setFormMessage("");
     clearError();
+    if (isAdminLoginPath(location.pathname)) {
+      setAccessRole(AUTH_ROLES.ADMINISTRATOR);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -174,19 +188,21 @@ function AuthPage() {
   };
 
   const handleModeChange = (nextVendorMode) => {
+    if (isAdminLoginRoute) return;
     setAccessRole(nextVendorMode ? AUTH_ROLES.VENDOR : AUTH_ROLES.CUSTOMER);
     clearError();
     setFormMessage("");
   };
 
   const handleRoleChange = (nextRole) => {
+    if (isAdminLoginRoute) return;
     setAccessRole(normalizeFrontendRole(nextRole) || AUTH_ROLES.CUSTOMER);
     clearError();
     setFormMessage("");
   };
 
   const handleIntentChange = (nextMode) => {
-    // Navigate to the correct route when toggling between login/register
+    if (isAdminLoginRoute) return;
     if (nextMode === "register") {
       routerNavigate("/register");
     } else if (nextMode === "login") {
@@ -210,7 +226,7 @@ function AuthPage() {
 
     const payload = isRegisterMode
       ? sanitizeRegisterPayload(formData)
-      : sanitizeLoginPayload(formData);
+      : sanitizeLoginPayload(formData, accessRole);
     const roleId = getRoleId(accessRole);
 
     try {
@@ -229,6 +245,13 @@ function AuthPage() {
             entryPoint: "reactivate",
             role: accessRole,
             roleId,
+          })
+        : isAdminLoginRoute
+        ? await loginAdmin(payload, {
+            isVendorMode: true,
+            entryPoint: "loginAdmin",
+            role: AUTH_ROLES.ADMINISTRATOR,
+            roleId: getRoleId(AUTH_ROLES.ADMINISTRATOR),
           })
         : await login(payload, {
             isVendorMode,
@@ -281,6 +304,7 @@ function AuthPage() {
             <AuthHero
               accessRole={accessRole}
               isVendorMode={isVendorMode}
+              isAdminLoginRoute={isAdminLoginRoute}
               onToggleVendorMode={handleModeChange}
               onSelectRole={handleRoleChange}
             />
@@ -298,6 +322,7 @@ function AuthPage() {
             <AuthFormPanel
               accessRole={accessRole}
               isVendorMode={isVendorMode}
+              isAdminLoginRoute={isAdminLoginRoute}
               formMode={formMode}
               formData={formData}
               formErrors={formErrors}

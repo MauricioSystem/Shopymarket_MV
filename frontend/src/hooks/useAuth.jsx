@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   loginRequest,
+  loginAdminRequest,
   registerRequest,
   reactivateRequest,
 } from "@/services/authApi";
@@ -126,13 +127,24 @@ const resolvePreferredRole = (
   registry,
   credentials,
 ) => {
+  const roleFromAuth =
+    normalizeFrontendRole(authResult?.role) ||
+    normalizeFrontendRole(authResult?.user?.role) ||
+    normalizeFrontendRole(authResult?.user?.roles?.[0]?.name);
+
+  if (roleFromAuth) {
+    return roleFromAuth;
+  }
+
+  const entryPoint = actionContext?.entryPoint;
+  if (entryPoint === "login" || entryPoint === "loginAdmin") {
+    return normalizeFrontendRole(actionContext?.role) || "customer";
+  }
+
   const userEmail = credentials?.email?.trim().toLowerCase();
   const registryRole = userEmail ? registry[userEmail] : null;
 
   return (
-    normalizeFrontendRole(authResult?.role) ||
-    normalizeFrontendRole(authResult?.user?.role) ||
-    normalizeFrontendRole(authResult?.user?.roles?.[0]?.name) ||
     normalizeFrontendRole(actionContext?.role) ||
     normalizeFrontendRole(registryRole) ||
     "customer"
@@ -219,6 +231,8 @@ export function AuthProvider({ children }) {
           ? await registerRequest(credentials)
           : entryPoint === "reactivate"
           ? await reactivateRequest(credentials)
+          : entryPoint === "loginAdmin"
+          ? await loginAdminRequest(credentials)
           : await loginRequest(credentials);
 
       const resolvedRole = resolvePreferredRole(
@@ -268,6 +282,8 @@ export function AuthProvider({ children }) {
 
   const login = (credentials, options = {}) =>
     authenticate({ credentials, ...options, entryPoint: "login" });
+  const loginAdmin = (credentials, options = {}) =>
+    authenticate({ credentials, ...options, entryPoint: "loginAdmin" });
   const register = (credentials, options = {}) =>
     authenticate({ credentials, ...options, entryPoint: "register" });
   const reactivate = (credentials, options = {}) =>
@@ -346,6 +362,7 @@ export function AuthProvider({ children }) {
       updateSessionUser,
       dashboardPath,
       login,
+      loginAdmin,
       register,
       reactivate,
       logout,

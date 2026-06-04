@@ -23,7 +23,7 @@ export default function Navbar() {
   };
 
   const handleDashboard = () => {
-    if (role === AUTH_ROLES.ADMIN) {
+    if (role === AUTH_ROLES.ADMINISTRATOR) {
       navigate('/dashboard/admin');
     } else if (role === AUTH_ROLES.VENDOR) {
       navigate('/dashboard/vendor');

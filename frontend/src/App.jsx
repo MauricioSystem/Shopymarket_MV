@@ -134,6 +134,15 @@ function App() {
           </PublicRoute>
         }
       />
+      <Route
+        path="/loginadmin"
+        element={
+          <PublicRoute>
+            <AuthPage entryPoint="loginAdmin" />
+          </PublicRoute>
+        }
+      />
+      <Route path="/loginAdmin" element={<Navigate to="/loginadmin" replace />} />
 
       {/* ZONAS PÚBLICAS ABSOLUTAS - Con protección perimetral HomeRouteGuard para staff/vendors */}
       <Route

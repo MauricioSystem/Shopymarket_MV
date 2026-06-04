@@ -150,3 +150,46 @@ export async function updateProductRating(token, ratingId, payload) {
 export async function deleteProductRating(token, ratingId) {
     return apiFetch(`/api/ratings/${ratingId}`, { token, method: 'DELETE' });
 }
+
+export async function getStoreRating(token, storeId) {
+    return apiFetch(`/api/ratings/stores/${storeId}`, { token });
+}
+
+export async function saveStoreRating(token, storeId, rating) {
+    return apiFetch(`/api/ratings/stores/${storeId}`, {
+        token,
+        method: 'PUT',
+        body: { rating },
+    });
+}
+
+export async function getServiceProfileRating(token, profileId) {
+    return apiFetch(`/api/ratings/service-profiles/${profileId}`, { token });
+}
+
+export async function saveServiceProfileRating(token, profileId, rating) {
+    return apiFetch(`/api/ratings/service-profiles/${profileId}`, {
+        token,
+        method: 'PUT',
+        body: { rating },
+    });
+}
+
+export async function getProductVotes(token, productId) {
+    return apiFetch(`/api/ratings/products/${productId}/votes`, { token });
+}
+
+export async function saveProductVote(token, productId, vote) {
+    return apiFetch(`/api/ratings/products/${productId}/vote`, {
+        token,
+        method: 'PUT',
+        body: { vote },
+    });
+}
+
+export async function deleteProductVote(token, productId) {
+    return apiFetch(`/api/ratings/products/${productId}/vote`, {
+        token,
+        method: 'DELETE',
+    });
+}

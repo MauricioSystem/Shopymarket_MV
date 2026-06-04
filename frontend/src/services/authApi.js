@@ -29,6 +29,11 @@ const REACTIVATE_ENDPOINTS = parseEndpointList(
     ['/api/auth/reactivate', '/auth/reactivate', '/reactivate'],
 );
 
+const LOGIN_ADMIN_ENDPOINTS = parseEndpointList(
+    import.meta.env.VITE_AUTH_LOGIN_ADMIN_PATHS,
+    ['/api/auth/loginAdmin', '/auth/loginAdmin', '/loginAdmin'],
+);
+
 const buildUrl = (path) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 const toErrorMessage = (payload, fallback) => {
@@ -180,6 +185,14 @@ const normalizeAuthPayload = (envelope) => {
 
 export async function loginRequest(credentials) {
     const response = await requestWithFallback(LOGIN_ENDPOINTS, {
+        body: credentials,
+    });
+
+    return normalizeAuthPayload(response);
+}
+
+export async function loginAdminRequest(credentials) {
+    const response = await requestWithFallback(LOGIN_ADMIN_ENDPOINTS, {
         body: credentials,
     });
 

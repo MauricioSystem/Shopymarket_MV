@@ -244,6 +244,41 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (service_profile_id) REFERENCES service_profiles(id)
 );
 
+ALTER TABLE reviews DROP CONSTRAINT IF EXISTS reviews_rating_check;
+ALTER TABLE reviews ADD CONSTRAINT reviews_rating_check CHECK (rating BETWEEN 0 AND 5);
+
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS average_rating NUMERIC(3,2) DEFAULT 0;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS rating_percentage NUMERIC(5,2) DEFAULT 0;
+
+ALTER TABLE service_profiles ADD COLUMN IF NOT EXISTS average_rating NUMERIC(3,2) DEFAULT 0;
+ALTER TABLE service_profiles ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0;
+ALTER TABLE service_profiles ADD COLUMN IF NOT EXISTS rating_percentage NUMERIC(5,2) DEFAULT 0;
+
+ALTER TABLE products ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS dislike_count INTEGER DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS vote_score INTEGER DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS product_votes (
+    id BIGSERIAL PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    vote SMALLINT NOT NULL CHECK (vote IN (-1, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (product_id, user_id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_store_review_per_user
+ON reviews (user_id, store_id)
+WHERE store_id IS NOT NULL AND product_id IS NULL AND service_id IS NULL AND service_profile_id IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_service_profile_review_per_user
+ON reviews (user_id, service_profile_id)
+WHERE service_profile_id IS NOT NULL AND product_id IS NULL AND service_id IS NULL AND store_id IS NULL;
+
 CREATE TABLE IF NOT EXISTS user_points (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,

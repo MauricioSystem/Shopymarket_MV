@@ -62,6 +62,7 @@ const registerFields = [
 function AuthFormPanel({
   accessRole,
   isVendorMode,
+  isAdminLoginRoute = false,
   formMode,
   formData,
   formErrors,
@@ -78,7 +79,8 @@ function AuthFormPanel({
   const isRegisterMode = formMode === "register";
   const isReactivateMode = formMode === "reactivate";
   const isDeliveryMode = accessRole === AUTH_ROLES.DELIVERY;
-  const isAdministratorMode = accessRole === AUTH_ROLES.ADMINISTRATOR;
+  const isAdministratorMode =
+    isAdminLoginRoute || accessRole === AUTH_ROLES.ADMINISTRATOR;
   const useDarkShell = isVendorMode || isAdministratorMode;
 
   const panelShellClass = useDarkShell
@@ -166,67 +168,71 @@ function AuthFormPanel({
                 >
                   {isReactivateMode
                     ? "Recupera tu cuenta eliminada con el mismo correo y contraseña."
-                    : isVendorMode
-                      ? "Accede a tu panel para administrar catálogo, ventas y pedidos con una estética más corporativa."
-                      : isDeliveryMode
-                        ? "Entra a tu experiencia de reparto con acceso ágil y una interfaz más cálida y clara."
-                        : "Entra a tu experiencia de compra con un acceso ágil y una interfaz más luminosa."}
+                    : isAdministratorMode
+                      ? "Acceso reservado para la administración general del sistema."
+                      : isVendorMode
+                        ? "Accede a tu panel para administrar catálogo, ventas y pedidos con una estética más corporativa."
+                        : isDeliveryMode
+                          ? "Entra a tu experiencia de reparto con acceso ágil y una interfaz más cálida y clara."
+                          : "Entra a tu experiencia de compra con un acceso ágil y una interfaz más luminosa."}
                 </p>
               </div>
             </div>
           </div>
 
-          <div
-            className={`flex items-center justify-between gap-4 rounded-[1.35rem] border p-1.5 ${
-              isVendorMode
-                ? "border-white/10 bg-white/5"
-                : isDeliveryMode
-                  ? "border-[rgba(247,217,141,0.34)] bg-[rgba(110,76,42,0.24)]"
-                  : "border-[rgba(201,150,12,0.14)] bg-[rgba(245,211,103,0.08)]"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => onToggleMode('login')}
-              className={cx(
-                "flex-1 rounded-[1rem] px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-[0.95rem]",
-                !isRegisterMode && !isReactivateMode
-                  ? isVendorMode
-                    ? "bg-white text-[#111827] shadow-[0_12px_30px_-18px_rgba(255,255,255,0.8)]"
-                    : isDeliveryMode
-                      ? "bg-[#2f1a0d] text-[#f7d98d] shadow-[0_12px_30px_-18px_rgba(36,21,11,0.45)]"
-                      : "bg-[#1a1200] text-[#fff8df] shadow-[0_12px_30px_-18px_rgba(26,18,0,0.35)]"
-                  : isVendorMode
-                    ? "text-white/70 hover:text-white"
-                    : isDeliveryMode
-                      ? "text-[#f7d98d]/76 hover:text-[#f7d98d]"
-                      : "text-[#6b5b3a] hover:text-[#1a1200]",
-              )}
+          {!isAdminLoginRoute ? (
+            <div
+              className={`flex items-center justify-between gap-4 rounded-[1.35rem] border p-1.5 ${
+                isVendorMode
+                  ? "border-white/10 bg-white/5"
+                  : isDeliveryMode
+                    ? "border-[rgba(247,217,141,0.34)] bg-[rgba(110,76,42,0.24)]"
+                    : "border-[rgba(201,150,12,0.14)] bg-[rgba(245,211,103,0.08)]"
+              }`}
             >
-              Ingresar
-            </button>
+              <button
+                type="button"
+                onClick={() => onToggleMode('login')}
+                className={cx(
+                  "flex-1 rounded-[1rem] px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-[0.95rem]",
+                  !isRegisterMode && !isReactivateMode
+                    ? isVendorMode
+                      ? "bg-white text-[#111827] shadow-[0_12px_30px_-18px_rgba(255,255,255,0.8)]"
+                      : isDeliveryMode
+                        ? "bg-[#2f1a0d] text-[#f7d98d] shadow-[0_12px_30px_-18px_rgba(36,21,11,0.45)]"
+                        : "bg-[#1a1200] text-[#fff8df] shadow-[0_12px_30px_-18px_rgba(26,18,0,0.35)]"
+                    : isVendorMode
+                      ? "text-white/70 hover:text-white"
+                      : isDeliveryMode
+                        ? "text-[#f7d98d]/76 hover:text-[#f7d98d]"
+                        : "text-[#6b5b3a] hover:text-[#1a1200]",
+                )}
+              >
+                Ingresar
+              </button>
 
-            <button
-              type="button"
-              onClick={() => onToggleMode('register')}
-              className={cx(
-                "flex-1 rounded-[1rem] px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-[0.95rem]",
-                isRegisterMode
-                  ? isVendorMode
-                    ? "bg-[var(--primary)] text-[#120c00] shadow-glow"
-                    : isDeliveryMode
-                      ? "bg-[linear-gradient(135deg,#7d4e27,#f7d98d)] text-[#2a1a0d] shadow-[0_16px_36px_-18px_rgba(201,147,90,0.78)]"
-                      : "bg-[linear-gradient(135deg,#f6d56d,#d6a208)] text-[#120c00] shadow-[0_16px_36px_-18px_rgba(214,162,8,0.75)]"
-                  : isVendorMode
-                    ? "text-white/70 hover:text-white"
-                    : isDeliveryMode
-                      ? "text-[#f7d98d]/76 hover:text-[#f7d98d]"
-                      : "text-[#6b5b3a] hover:text-[#1a1200]",
-              )}
-            >
-              Registrarme
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => onToggleMode('register')}
+                className={cx(
+                  "flex-1 rounded-[1rem] px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-[0.95rem]",
+                  isRegisterMode
+                    ? isVendorMode
+                      ? "bg-[var(--primary)] text-[#120c00] shadow-glow"
+                      : isDeliveryMode
+                        ? "bg-[linear-gradient(135deg,#7d4e27,#f7d98d)] text-[#2a1a0d] shadow-[0_16px_36px_-18px_rgba(201,147,90,0.78)]"
+                        : "bg-[linear-gradient(135deg,#f6d56d,#d6a208)] text-[#120c00] shadow-[0_16px_36px_-18px_rgba(214,162,8,0.75)]"
+                    : isVendorMode
+                      ? "text-white/70 hover:text-white"
+                      : isDeliveryMode
+                        ? "text-[#f7d98d]/76 hover:text-[#f7d98d]"
+                        : "text-[#6b5b3a] hover:text-[#1a1200]",
+                )}
+              >
+                Registrarme
+              </button>
+            </div>
+          ) : null}
 
           {formMessage && !formMessageIsError ? (
             <div
@@ -323,10 +329,13 @@ function AuthFormPanel({
                 ? "Crear cuenta y continuar"
                 : isReactivateMode
                   ? "Reactivar cuenta"
-                  : "Entrar a ShopyMarket"}
+                  : isAdministratorMode
+                    ? "Entrar al panel de administración"
+                    : "Entrar a ShopyMarket"}
             </Button>
           </form>
 
+          {!isAdminLoginRoute ? (
           <div
             className={`mt-4 border-t pt-4 text-sm ${dividerClass} ${mutedTextClass}`}
           >
@@ -396,6 +405,7 @@ function AuthFormPanel({
               </ModeSwitchLink>
             )}
           </div>
+          ) : null}
         </div>
       </div>
     </section>

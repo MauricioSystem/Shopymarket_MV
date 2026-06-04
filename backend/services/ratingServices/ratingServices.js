@@ -1,90 +1,118 @@
 const ratingModel = require('../../models/ratingModel');
 
-const createRating = async (ratingData) => {
+const writableRoles = ['cliente'];
+
+const assertCustomer = (role) => {
+    if (!writableRoles.includes(role)) {
+        throw new Error('Solo los usuarios pueden calificar o votar');
+    }
+};
+
+const normalizeRating = (value) => {
+    const rating = Number(value);
+    if (!Number.isInteger(rating) || rating < 0 || rating > 5) {
+        throw new Error('La calificación debe ser un número entero entre 0 y 5');
+    }
+    return rating;
+};
+
+const normalizeVote = (value) => {
+    const vote = Number(value);
+    if (![1, -1].includes(vote)) {
+        throw new Error('El voto debe ser 1 o -1');
+    }
+    return vote;
+};
+
+const getTargetRating = async ({ targetType, targetId, userId }) => {
     try {
-        const { product_id, user_id, score, comment } = ratingData;
-
-        if (!product_id || !user_id || !score) {
-            throw new Error('product_id, user_id y score son obligatorios');
+        if (!targetId) {
+            throw new Error('El identificador es obligatorio');
         }
 
-        if (score < 1 || score > 5 || !Number.isInteger(score)) {
-            throw new Error('El score debe ser un número entero entre 1 y 5');
-        }
-
-        const existingRating = await ratingModel.checkUserRating(product_id, user_id);
-        if (existingRating) {
-            throw new Error('Este usuario ya ha calificado este producto');
-        }
-
-        const rating = await ratingModel.createRating(ratingData);
-        return { success: true, data: rating };
+        const data = await ratingModel.getRatingStats(targetType, targetId, userId);
+        return { success: true, data };
     } catch (error) {
         return { success: false, error: error.message };
     }
 };
 
-const getRatingsByProduct = async (productId) => {
+const saveTargetRating = async ({ targetType, targetId, userId, userRole, rating }) => {
+    try {
+        if (!targetId || !userId) {
+            throw new Error('El identificador y el usuario son obligatorios');
+        }
+
+        assertCustomer(userRole);
+        const normalizedRating = normalizeRating(rating);
+        const saved = await ratingModel.upsertRating({
+            targetType,
+            targetId,
+            userId,
+            rating: normalizedRating,
+        });
+        const stats = await ratingModel.getRatingStats(targetType, targetId, userId);
+
+        return { success: true, data: { rating: saved, stats } };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
+const getProductVotes = async ({ productId, userId }) => {
     try {
         if (!productId) {
             throw new Error('El productId es obligatorio');
         }
 
-        const ratings = await ratingModel.getRatingsByProductId(productId);
-        const stats = await ratingModel.getProductAverageRating(productId);
-
-        return {
-            success: true,
-            data: {
-                ratings,
-                stats: {
-                    totalRatings: parseInt(stats.total_ratings) || 0,
-                    averageScore: parseFloat(stats.average_score) || 0,
-                    maxScore: stats.max_score || 0,
-                    minScore: stats.min_score || 0,
-                },
-            },
-        };
+        const data = await ratingModel.getProductVoteStats(productId, userId);
+        return { success: true, data };
     } catch (error) {
         return { success: false, error: error.message };
     }
 };
 
-const updateRating = async (ratingId, ratingData) => {
+const saveProductVote = async ({ productId, userId, userRole, vote }) => {
     try {
-        const { score, comment } = ratingData;
-
-        if (!ratingId) {
-            throw new Error('El ratingId es obligatorio');
+        if (!productId || !userId) {
+            throw new Error('El productId y el usuario son obligatorios');
         }
 
-        if (score && (score < 1 || score > 5 || !Number.isInteger(score))) {
-            throw new Error('El score debe ser un número entero entre 1 y 5');
-        }
+        assertCustomer(userRole);
+        const normalizedVote = normalizeVote(vote);
+        const saved = await ratingModel.upsertProductVote({
+            productId,
+            userId,
+            vote: normalizedVote,
+        });
+        const stats = await ratingModel.getProductVoteStats(productId, userId);
 
-        const rating = await ratingModel.updateRating(ratingId, ratingData);
-        return { success: true, data: rating };
+        return { success: true, data: { vote: saved, stats } };
     } catch (error) {
         return { success: false, error: error.message };
     }
 };
 
-const deleteRating = async (ratingId) => {
+const deleteProductVote = async ({ productId, userId, userRole }) => {
     try {
-        if (!ratingId) {
-            throw new Error('El ratingId es obligatorio');
+        if (!productId || !userId) {
+            throw new Error('El productId y el usuario son obligatorios');
         }
 
-        const rating = await ratingModel.deleteRating(ratingId);
-        return { success: true, data: rating };
+        assertCustomer(userRole);
+        const deleted = await ratingModel.deleteProductVote(productId, userId);
+        const stats = await ratingModel.getProductVoteStats(productId, userId);
+
+        return { success: true, data: { vote: deleted, stats } };
     } catch (error) {
         return { success: false, error: error.message };
     }
 };
 
 module.exports = {
-    createRating,
-    getRatingsByProduct,
-    updateRating,
-    deleteRating,
+    getTargetRating,
+    saveTargetRating,
+    getProductVotes,
+    saveProductVote,
+    deleteProductVote,
 };

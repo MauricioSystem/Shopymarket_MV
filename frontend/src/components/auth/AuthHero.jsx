@@ -28,6 +28,15 @@ const heroCopy = {
     metricLabel: "Ventas",
     metricValue: "Premium",
   },
+  administrator: {
+    eyebrow: "Administración del sistema",
+    title: "Panel central para la gestión global de ShopyMarket.",
+    description:
+      "Acceso reservado para la operación general de la plataforma con una interfaz ejecutiva y segura.",
+    highlights: ["Control total", "Gestión global", "Acceso restringido"],
+    metricLabel: "Sistema",
+    metricValue: "Admin",
+  },
   delivery: {
     eyebrow: "Experiencia para delivery",
     title:
@@ -43,16 +52,21 @@ const heroCopy = {
 function AuthHero({
   accessRole,
   isVendorMode,
+  isAdminLoginRoute = false,
   onToggleVendorMode,
   onSelectRole,
 }) {
+  const isAdministratorMode =
+    isAdminLoginRoute || accessRole === AUTH_ROLES.ADMINISTRATOR;
   const isDeliveryMode = accessRole === AUTH_ROLES.DELIVERY;
-  const theme = isDeliveryMode
-    ? heroCopy.delivery
-    : isVendorMode
-      ? heroCopy.vendor
-      : heroCopy.customer;
-  const heroShellClass = isVendorMode
+  const theme = isAdministratorMode
+    ? heroCopy.administrator
+    : isDeliveryMode
+      ? heroCopy.delivery
+      : isVendorMode
+        ? heroCopy.vendor
+        : heroCopy.customer;
+  const heroShellClass = isAdministratorMode || isVendorMode
     ? "bg-[radial-gradient(circle_at_top_left,rgba(245,211,103,0.08),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.04),transparent_26%),linear-gradient(155deg,rgba(3,7,15,0.96),rgba(10,16,30,0.92))]"
     : isDeliveryMode
       ? "bg-[radial-gradient(circle_at_top_left,rgba(72,42,20,0.94),transparent_22%),radial-gradient(circle_at_top_right,rgba(245,211,103,0.22),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(201,147,90,0.22),transparent_30%),linear-gradient(155deg,rgba(39,23,12,0.98),rgba(109,74,43,0.94))]"
@@ -64,11 +78,13 @@ function AuthHero({
   const customerMutedClass = isDeliveryMode
     ? "text-[#f4d9ad]/80"
     : "text-[#7a6a48]";
-  const themeLabel = isDeliveryMode
-    ? "delivery"
-    : isVendorMode
-      ? "vendor"
-      : "customer";
+  const themeLabel = isAdministratorMode
+    ? "vendor"
+    : isDeliveryMode
+      ? "delivery"
+      : isVendorMode
+        ? "vendor"
+        : "customer";
 
   return (
     <section
@@ -76,28 +92,28 @@ function AuthHero({
     >
       <div
         className={
-          isVendorMode
+          isAdministratorMode || isVendorMode
             ? "absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:42px_42px] opacity-25 [mask-image:linear-gradient(to_bottom,white,transparent_92%)]"
             : "absolute inset-0 bg-[linear-gradient(rgba(26,18,0,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(26,18,0,0.05)_1px,transparent_1px)] bg-[size:42px_42px] opacity-22 [mask-image:linear-gradient(to_bottom,white,transparent_92%)]"
         }
       />
       <div
         className={
-          isVendorMode
+          isAdministratorMode || isVendorMode
             ? "absolute -left-16 top-20 h-44 w-44 rounded-full bg-[rgba(245,211,103,0.12)] blur-3xl animate-float"
             : "absolute -left-16 top-20 h-52 w-52 rounded-full bg-[rgba(91,141,255,0.16)] blur-3xl animate-float"
         }
       />
       <div
         className={
-          isVendorMode
+          isAdministratorMode || isVendorMode
             ? "absolute right-0 top-14 h-60 w-60 rounded-full bg-[rgba(255,255,255,0.06)] blur-3xl animate-float"
             : "absolute right-0 top-14 h-60 w-60 rounded-full bg-[rgba(245,211,103,0.18)] blur-3xl animate-float"
         }
       />
       <div
         className={
-          isVendorMode
+          isAdministratorMode || isVendorMode
             ? "absolute -bottom-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[rgba(245,211,103,0.1)] blur-3xl"
             : "absolute -bottom-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[rgba(91,141,255,0.09)] blur-3xl"
         }
@@ -107,14 +123,14 @@ function AuthHero({
         <div className="max-w-2xl">
           <BrandMark
             mode={themeLabel}
-            tone={isVendorMode || isDeliveryMode ? "light" : "dark"}
+            tone={isAdministratorMode || isVendorMode || isDeliveryMode ? "light" : "dark"}
           />
         </div>
 
         <div className="max-w-2xl space-y-4">
           <p
             className={
-              isVendorMode
+              isAdministratorMode || isVendorMode
                 ? "text-xs font-bold uppercase tracking-[0.5em] text-white/60"
                 : `text-xs font-bold uppercase tracking-[0.5em] ${customerMutedClass}`
             }
@@ -123,7 +139,7 @@ function AuthHero({
           </p>
           <h2
             className={
-              isVendorMode
+              isAdministratorMode || isVendorMode
                 ? "max-w-xl font-display text-3xl font-bold leading-[1.05] text-white sm:text-4xl xl:text-5xl"
                 : isDeliveryMode
                   ? "max-w-xl font-display text-3xl font-bold leading-[1.05] text-[#f7d98d] sm:text-4xl xl:text-5xl"
@@ -134,7 +150,7 @@ function AuthHero({
           </h2>
           <p
             className={
-              isVendorMode
+              isAdministratorMode || isVendorMode
                 ? "max-w-xl text-sm leading-7 text-white/70 sm:text-base"
                 : isDeliveryMode
                   ? "max-w-xl text-sm leading-7 text-[#f6e4c7] sm:text-base"

@@ -2,17 +2,25 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { getAllProducts, getAllStores } from "@/services/marketApi";
+import {
+  getAllProducts,
+  getAllStores,
+  getProductVotes,
+  saveProductVote,
+  deleteProductVote,
+} from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import { API_BASE_URL } from "@/config/appSettings";
+import { AUTH_ROLES } from "@/utils/authRoles";
+import { ProductVotePanel } from "@/components/RatingActions";
 
 const API_BASE = API_BASE_URL;
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token, role } = useAuth();
   const { addToCart, openCart } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -22,6 +30,9 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [buyLoading, setBuyLoading] = useState(false);
   const [buyMessage, setBuyMessage] = useState(null);
+  const [voteStats, setVoteStats] = useState(null);
+  const [voteLoading, setVoteLoading] = useState(false);
+  const [voteMessage, setVoteMessage] = useState(null);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -33,7 +44,7 @@ export default function ProductDetailPage() {
           getAllStores(null)
         ]);
 
-        const productsList = Array.isArray(productsRes) ? productsRes : productsRes.data; if (productsList) { const found = productsList.find(p => Number(p.id) === Number(id)); if (found) { setProduct(found); const storesList = Array.isArray(storesRes) ? storesRes : storesRes.data; if (storesList) { const s = storesList.find(st => Number(st.id) === Number(found.store_id)); if (s) setStore(s); }
+        const productsList = Array.isArray(productsRes) ? productsRes : productsRes.data; if (productsList) { const found = productsList.find(p => Number(p.id) === Number(id)); if (found) { setProduct(found); const votes = await getProductVotes(token, found.id).catch(() => null); setVoteStats(votes); const storesList = Array.isArray(storesRes) ? storesRes : storesRes.data; if (storesList) { const s = storesList.find(st => Number(st.id) === Number(found.store_id)); if (s) setStore(s); }
           } else {
             setError("Producto no encontrado.");
           }
@@ -45,7 +56,7 @@ export default function ProductDetailPage() {
       }
     }
     if (id) fetchProduct();
-  }, [id]);
+  }, [id, token]);
 
   const handleBuy = async () => {
     if (!isAuthenticated) {
@@ -68,6 +79,52 @@ export default function ProductDetailPage() {
       setBuyMessage({ type: 'error', text: e.message || "Error inesperado." });
     } finally {
       setBuyLoading(false);
+    }
+  };
+
+  const handleVote = async (vote) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (role !== AUTH_ROLES.CUSTOMER) {
+      setVoteMessage({ type: "error", text: "Solo los usuarios pueden votar." });
+      return;
+    }
+
+    setVoteLoading(true);
+    setVoteMessage(null);
+
+    try {
+      const result = await saveProductVote(token, product.id, vote);
+      setVoteStats(result.stats);
+      setProduct((current) => ({ ...current, ...result.stats }));
+      setVoteMessage({ type: "success", text: "Voto guardado." });
+    } catch (err) {
+      setVoteMessage({ type: "error", text: err?.message || "No se pudo guardar el voto." });
+    } finally {
+      setVoteLoading(false);
+    }
+  };
+
+  const handleClearVote = async () => {
+    if (!isAuthenticated || role !== AUTH_ROLES.CUSTOMER) {
+      return;
+    }
+
+    setVoteLoading(true);
+    setVoteMessage(null);
+
+    try {
+      const result = await deleteProductVote(token, product.id);
+      setVoteStats(result.stats);
+      setProduct((current) => ({ ...current, ...result.stats }));
+      setVoteMessage({ type: "success", text: "Voto eliminado." });
+    } catch (err) {
+      setVoteMessage({ type: "error", text: err?.message || "No se pudo eliminar el voto." });
+    } finally {
+      setVoteLoading(false);
     }
   };
 
@@ -101,6 +158,7 @@ export default function ProductDetailPage() {
   }
 
   const imageUrl = product.image_url ? (product.image_url.startsWith("http") ? product.image_url : `${API_BASE}${product.image_url}`) : null;
+  const canVote = isAuthenticated && role === AUTH_ROLES.CUSTOMER;
 
   return (
     <div className="min-h-screen bg-[#faf9f5] flex flex-col font-sans">
@@ -144,6 +202,15 @@ export default function ProductDetailPage() {
                 <p className="text-sm font-semibold text-slate-500 mt-2">Stock disponible: <span className="text-slate-900">{product.stock} unidades</span></p>
               )}
             </div>
+
+            <ProductVotePanel
+              stats={voteStats || product}
+              canInteract={canVote}
+              onVote={handleVote}
+              onClearVote={handleClearVote}
+              loading={voteLoading}
+              message={voteMessage}
+            />
             
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-center gap-4">

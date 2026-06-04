@@ -1,24 +1,34 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { getAllServices, getAllServiceProfiles } from "@/services/marketApi";
+import {
+  getAllServices,
+  getAllServiceProfiles,
+  getServiceProfileRating,
+  saveServiceProfileRating,
+} from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import { API_BASE_URL } from "@/config/appSettings";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { AUTH_ROLES } from "@/utils/authRoles";
+import { StarRatingPanel } from "@/components/RatingActions";
 
 const API_BASE = API_BASE_URL;
 
 export default function ServiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, role } = useAuth();
 
   const [service, setService] = useState(null);
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [ratingStats, setRatingStats] = useState(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState(null);
 
   useEffect(() => {
     async function fetchService() {
@@ -28,7 +38,7 @@ export default function ServiceDetailPage() {
           getAllServices(null),
           getAllServiceProfiles(null)
         ]);
-        const servicesList = Array.isArray(servicesRes) ? servicesRes : servicesRes.data; if (servicesList) { const found = servicesList.find(s => Number(s.id) === Number(id)); if (found) { setService(found); const profilesList = Array.isArray(profilesRes) ? profilesRes : profilesRes.data; if (profilesList) { const p = profilesList.find(pr => Number(pr.id) === Number(found.service_profile_id)); if (p) setProvider(p); }
+        const servicesList = Array.isArray(servicesRes) ? servicesRes : servicesRes.data; if (servicesList) { const found = servicesList.find(s => Number(s.id) === Number(id)); if (found) { setService(found); const profilesList = Array.isArray(profilesRes) ? profilesRes : profilesRes.data; if (profilesList) { const p = profilesList.find(pr => Number(pr.id) === Number(found.service_profile_id)); if (p) { setProvider(p); const rating = await getServiceProfileRating(token, p.id).catch(() => null); setRatingStats(rating); } }
           } else {
             setError("Servicio no encontrado.");
           }
@@ -40,7 +50,7 @@ export default function ServiceDetailPage() {
       }
     }
     if (id) fetchService();
-  }, [id]);
+  }, [id, token]);
 
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingStep, setBookingStep] = useState(1); // 1: form, 2: processing, 3: success
@@ -54,6 +64,31 @@ export default function ServiceDetailPage() {
       setShowBookingModal(true);
       setBookingStep(1);
       setBookingError(null);
+    }
+  };
+
+  const handleRate = async (rating) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (role !== AUTH_ROLES.CUSTOMER) {
+      setRatingMessage({ type: "error", text: "Solo los usuarios pueden calificar." });
+      return;
+    }
+
+    setRatingLoading(true);
+    setRatingMessage(null);
+
+    try {
+      const result = await saveServiceProfileRating(token, provider.id, rating);
+      setRatingStats(result.stats);
+      setRatingMessage({ type: "success", text: "Calificación guardada." });
+    } catch (err) {
+      setRatingMessage({ type: "error", text: err?.message || "No se pudo guardar la calificación." });
+    } finally {
+      setRatingLoading(false);
     }
   };
 
@@ -116,6 +151,7 @@ export default function ServiceDetailPage() {
   }
 
   const imageUrl = service.image_url ? (service.image_url.startsWith("http") ? service.image_url : `${API_BASE}${service.image_url}`) : null;
+  const canRate = isAuthenticated && role === AUTH_ROLES.CUSTOMER;
 
   return (
     <div className="min-h-screen bg-[#040912] flex flex-col font-sans text-white">
@@ -152,9 +188,6 @@ export default function ServiceDetailPage() {
               <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
                 {service.name}
               </h1>
-              <div className="flex items-center gap-2 text-sm text-white/70">
-                <span className="text-yellow-400 text-lg">⭐⭐⭐⭐⭐</span> <span className="opacity-60">(Evaluación de excelencia)</span>
-              </div>
               <p className="text-base text-white/60 leading-relaxed max-w-lg">
                 {service.description || "Este servicio no tiene descripción adicional configurada en el portafolio."}
               </p>
@@ -171,6 +204,14 @@ export default function ServiceDetailPage() {
                 </p>
               )}
             </div>
+
+            <StarRatingPanel
+              stats={ratingStats || provider}
+              canInteract={canRate}
+              onRate={handleRate}
+              loading={ratingLoading}
+              message={ratingMessage}
+            />
             
             <div className="space-y-6">
               <Button onClick={handleAction} className="w-full bg-blue-500 text-white font-bold py-4 rounded-full hover:bg-blue-600 shadow-xl shadow-blue-500/20 transition-all text-lg uppercase tracking-wider">

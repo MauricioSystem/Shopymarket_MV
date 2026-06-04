@@ -23,8 +23,12 @@ import {
   getAllStores,
   getAllServiceProfiles,
   getAllCategories,
+  getProductVotes,
+  saveProductVote,
+  deleteProductVote,
 } from "@/services/marketApi";
 import { API_BASE_URL } from "@/config/appSettings";
+import { ProductVoteButtons } from "@/components/RatingActions";
 
 const TABS = [
   { id: "all", label: "Todo", icon: "🌐" },
@@ -32,6 +36,14 @@ const TABS = [
   { id: "products", label: "Productos", icon: "🛍️" },
   { id: "services", label: "Servicios", icon: "🔧" },
 ];
+
+const withProductVotes = async (productList, token) =>
+  Promise.all(
+    productList.map(async (product) => {
+      const stats = await getProductVotes(token, product.id).catch(() => null);
+      return stats ? { ...product, ...stats } : product;
+    }),
+  );
 
 // Navbar is imported globally
 
@@ -114,7 +126,15 @@ function StoreCard({ store, onClick }) {
   );
 }
 
-function ProductCard({ product, isAuthenticated, onBuy, onClick }) {
+function ProductCard({
+  product,
+  isAuthenticated,
+  canVote,
+  onBuy,
+  onClick,
+  onVote,
+  voteLoading,
+}) {
   const API_BASE = API_BASE_URL;
   const imageUrl = product.image_url
     ? product.image_url.startsWith("http")
@@ -180,6 +200,13 @@ function ProductCard({ product, isAuthenticated, onBuy, onClick }) {
             {Number(product.average_rating).toFixed(1)}
           </p>
         )}
+        <ProductVoteButtons
+          stats={product}
+          canInteract={canVote}
+          onVote={(vote) => onVote(product, vote)}
+          onClearVote={() => onVote(product, Number(product.user_vote?.vote || 0))}
+          loading={voteLoading === product.id}
+        />
       </div>
     </article>
   );
@@ -322,6 +349,7 @@ export default function MarketPage() {
   const [error, setError] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [productVoteLoading, setProductVoteLoading] = useState(null);
 
   const navigate = (view) => {
     const viewToRoute = {
@@ -352,9 +380,10 @@ export default function MarketPage() {
       setServices(
         Array.isArray(servicesResult?.data) ? servicesResult.data : [],
       );
-      setProducts(
-        Array.isArray(productsResult?.data) ? productsResult.data : [],
-      );
+      const productList = Array.isArray(productsResult?.data)
+        ? productsResult.data
+        : [];
+      setProducts(await withProductVotes(productList, token));
       setCategories(
         Array.isArray(categoriesResult?.data) ? categoriesResult.data : [],
       );
@@ -363,7 +392,7 @@ export default function MarketPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     loadMarketData();
@@ -377,6 +406,37 @@ export default function MarketPage() {
       if (success) openCart();
     }
   }, [isAuthenticated, addToCart, openCart]);
+
+  const handleProductVote = useCallback(async (product, vote) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (role !== AUTH_ROLES.CUSTOMER) {
+      return;
+    }
+
+    setProductVoteLoading(product.id);
+
+    try {
+      const currentVote = Number(product.user_vote?.vote || 0);
+      const result =
+        currentVote === vote
+          ? await deleteProductVote(token, product.id)
+          : await saveProductVote(token, product.id, vote);
+
+      setProducts((current) =>
+        current.map((entry) =>
+          Number(entry.id) === Number(product.id)
+            ? { ...entry, ...result.stats }
+            : entry,
+        ),
+      );
+    } finally {
+      setProductVoteLoading(null);
+    }
+  }, [isAuthenticated, role, token]);
 
   // Reset selected category if not compatible with the newly selected tab
   useEffect(() => {
@@ -809,7 +869,10 @@ export default function MarketPage() {
                           key={product.id}
                           product={product}
                           isAuthenticated={isAuthenticated}
+                          canVote={isAuthenticated && role === AUTH_ROLES.CUSTOMER}
                           onBuy={handleBuyProduct}
+                          onVote={handleProductVote}
+                          voteLoading={productVoteLoading}
                           onClick={() => {
                             routerNavigate(`/product/${product.id}`);
                           }}

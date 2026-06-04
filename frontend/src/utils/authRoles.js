@@ -5,6 +5,13 @@ export const AUTH_ROLES = {
   DELIVERY: "delivery",
 };
 
+export const ADMIN_LOGIN_PATH = "/loginadmin";
+
+export const isAdminLoginPath = (pathname) =>
+  String(pathname || "")
+    .replace(/\/+$/, "")
+    .toLowerCase() === ADMIN_LOGIN_PATH;
+
 export const ROLE_IDS = {
   administrator: 1,
   vendor: 2,
@@ -53,6 +60,15 @@ export const getRoleLabel = (role) =>
 
 export const getRoleId = (role) =>
   ROLE_IDS[normalizeFrontendRole(role)] || null;
+
+export const toBackendRole = (role) => {
+  const normalized = normalizeFrontendRole(role);
+  if (normalized === AUTH_ROLES.ADMINISTRATOR) return "super_admin";
+  if (normalized === AUTH_ROLES.VENDOR) return "admin";
+  if (normalized === AUTH_ROLES.CUSTOMER) return "cliente";
+  if (normalized === AUTH_ROLES.DELIVERY) return "repartidor";
+  return null;
+};
 
 export const resolveDashboardPath = (role) => {
   const normalizedRole = normalizeFrontendRole(role);

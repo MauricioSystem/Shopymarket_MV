@@ -10,13 +10,29 @@ import {
   getAllProducts,
   getAllServiceProfiles,
   getAllServices,
+  getStoreRating,
+  saveStoreRating,
+  getServiceProfileRating,
+  saveServiceProfileRating,
+  getProductVotes,
+  saveProductVote,
+  deleteProductVote,
 } from "@/services/marketApi";
 import { useCart } from "@/context/CartContext";
 import Navbar from "@/components/layout/Navbar";
 import { API_BASE_URL } from "@/config/appSettings";
+import { ProductVoteButtons, StarRatingPanel } from "@/components/RatingActions";
 
 const API_BASE = API_BASE_URL;
 // Modals extracted to dedicated pages
+
+const withProductVotes = async (productList, token) =>
+  Promise.all(
+    productList.map(async (product) => {
+      const stats = await getProductVotes(token, product.id).catch(() => null);
+      return stats ? { ...product, ...stats } : product;
+    }),
+  );
 
 export default function StoreDetailPage({ type }) {
   const { storeName, serviceName } = useParams();
@@ -32,6 +48,7 @@ export default function StoreDetailPage({ type }) {
     currentView,
     role,
     capabilities,
+    token,
   } = useAuth();
   const { addToCart, openCart } = useCart();
 
@@ -44,6 +61,11 @@ export default function StoreDetailPage({ type }) {
   const [services, setServices] = useState([]);
   const [activeTab, setActiveTab] = useState("products");
   const [cartAlert, setCartAlert] = useState(false);
+  const [storeRating, setStoreRating] = useState(null);
+  const [serviceProfileRating, setServiceProfileRating] = useState(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState(null);
+  const [productVoteLoading, setProductVoteLoading] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -107,9 +129,24 @@ export default function StoreDetailPage({ type }) {
 
       setStore(currentStore);
       setServiceProfile(currentProfile);
+      setRatingMessage(null);
+
+      const [storeRatingResult, serviceRatingResult] = await Promise.all([
+        currentStore ? getStoreRating(token, currentStore.id).catch(() => null) : Promise.resolve(null),
+        currentProfile ? getServiceProfileRating(token, currentProfile.id).catch(() => null) : Promise.resolve(null),
+      ]);
+
+      setStoreRating(storeRatingResult);
+      setServiceProfileRating(serviceRatingResult);
 
       if (currentStore) {
-        setProducts(allProducts.filter((p) => p && Number(p.store_id) === Number(currentStore.id) && p.status !== 'inactive'));
+        const storeProducts = allProducts.filter(
+          (p) =>
+            p &&
+            Number(p.store_id) === Number(currentStore.id) &&
+            p.status !== 'inactive',
+        );
+        setProducts(await withProductVotes(storeProducts, token));
       } else {
         setProducts([]);
       }
@@ -135,7 +172,7 @@ export default function StoreDetailPage({ type }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedStoreId, selectedServiceProfileId, storeName, serviceName]);
+  }, [selectedStoreId, selectedServiceProfileId, storeName, serviceName, token]);
 
   useEffect(() => {
     loadData();
@@ -178,6 +215,69 @@ export default function StoreDetailPage({ type }) {
     }
   };
 
+  const handleRate = async (rating) => {
+    if (!isAuthenticated) {
+      routerNavigate("/login");
+      return;
+    }
+
+    if (role !== AUTH_ROLES.CUSTOMER) {
+      setRatingMessage({ type: "error", text: "Solo los usuarios pueden calificar." });
+      return;
+    }
+
+    setRatingLoading(true);
+    setRatingMessage(null);
+
+    try {
+      const result = isServicesActive
+        ? await saveServiceProfileRating(token, serviceProfile.id, rating)
+        : await saveStoreRating(token, store.id, rating);
+
+      if (isServicesActive) {
+        setServiceProfileRating(result.stats);
+      } else {
+        setStoreRating(result.stats);
+      }
+      setRatingMessage({ type: "success", text: "Calificación guardada." });
+    } catch (err) {
+      setRatingMessage({ type: "error", text: err?.message || "No se pudo guardar la calificación." });
+    } finally {
+      setRatingLoading(false);
+    }
+  };
+
+  const handleProductVote = async (product, vote) => {
+    if (!isAuthenticated) {
+      routerNavigate("/login");
+      return;
+    }
+
+    if (role !== AUTH_ROLES.CUSTOMER) {
+      return;
+    }
+
+    setProductVoteLoading(product.id);
+
+    try {
+      const currentVote = Number(product.user_vote?.vote || 0);
+      const result =
+        currentVote === vote
+          ? await deleteProductVote(token, product.id)
+          : await saveProductVote(token, product.id, vote);
+
+      setProducts((current) =>
+        current.map((entry) =>
+          Number(entry.id) === Number(product.id)
+            ? { ...entry, ...result.stats }
+            : entry,
+        ),
+      );
+    } finally {
+      setProductVoteLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#040912] text-white">
@@ -213,6 +313,8 @@ export default function StoreDetailPage({ type }) {
       (serviceProfile && Number(serviceProfile.admin_user_id) === Number(user.id)));
 
   const isServicesActive = activeTab === "services" && serviceProfile;
+  const activeRating = isServicesActive ? serviceProfileRating : storeRating;
+  const canRate = isAuthenticated && role === AUTH_ROLES.CUSTOMER;
 
   const activeBanner = isServicesActive ? serviceProfile?.banner_url : (store?.banner_url || serviceProfile?.banner_url);
   const bannerSrc = activeBanner
@@ -367,6 +469,14 @@ export default function StoreDetailPage({ type }) {
           </div>
         </div>
 
+        <StarRatingPanel
+          stats={activeRating}
+          canInteract={canRate}
+          onRate={handleRate}
+          loading={ratingLoading}
+          message={ratingMessage}
+        />
+
         {/* Catalog Section */}
         <div className="space-y-6">
           {/* Tabs header */}
@@ -458,6 +568,14 @@ export default function StoreDetailPage({ type }) {
                             🛒 Comprar
                           </button>
                         </div>
+                        <ProductVoteButtons
+                          stats={product}
+                          canInteract={isAuthenticated && role === AUTH_ROLES.CUSTOMER}
+                          onVote={(vote) => handleProductVote(product, vote)}
+                          onClearVote={() => handleProductVote(product, Number(product.user_vote?.vote || 0))}
+                          loading={productVoteLoading === product.id}
+                          tone="dark"
+                        />
                       </div>
                     </article>
                   );

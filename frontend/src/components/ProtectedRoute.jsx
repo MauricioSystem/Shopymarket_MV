@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { ADMIN_LOGIN_PATH } from "@/utils/authRoles";
 
 /**
  * Route protection component.
@@ -18,7 +19,9 @@ export default function ProtectedRoute({ children, requiredCapability }) {
 
   // 1. If not authenticated, redirect to /login and save original attempt location
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const loginPath =
+      requiredCapability === "canAccessAdminPanel" ? ADMIN_LOGIN_PATH : "/login";
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 
   // 2. If authenticated but lacks required capability, determine their authorized safe dashboard
