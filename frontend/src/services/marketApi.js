@@ -104,6 +104,14 @@ export async function createService(token, payload) {
     return apiFetch('/api/services', { token, method: 'POST', body: payload });
 }
 
+export async function updateService(token, serviceId, payload) {
+    return apiFetch(`/api/services/${serviceId}`, { token, method: 'PUT', body: payload });
+}
+
+export async function deleteService(token, serviceId) {
+    return apiFetch(`/api/services/${serviceId}`, { token, method: 'DELETE' });
+}
+
 // ─── Product CRUD ─────────────────────────────────────────────────────────────
 export async function createProduct(token, payload) {
     return apiFetch('/api/products', { token, method: 'POST', body: payload });
@@ -149,47 +157,4 @@ export async function updateProductRating(token, ratingId, payload) {
 
 export async function deleteProductRating(token, ratingId) {
     return apiFetch(`/api/ratings/${ratingId}`, { token, method: 'DELETE' });
-}
-
-export async function getStoreRating(token, storeId) {
-    return apiFetch(`/api/ratings/stores/${storeId}`, { token });
-}
-
-export async function saveStoreRating(token, storeId, rating) {
-    return apiFetch(`/api/ratings/stores/${storeId}`, {
-        token,
-        method: 'PUT',
-        body: { rating },
-    });
-}
-
-export async function getServiceProfileRating(token, profileId) {
-    return apiFetch(`/api/ratings/service-profiles/${profileId}`, { token });
-}
-
-export async function saveServiceProfileRating(token, profileId, rating) {
-    return apiFetch(`/api/ratings/service-profiles/${profileId}`, {
-        token,
-        method: 'PUT',
-        body: { rating },
-    });
-}
-
-export async function getProductVotes(token, productId) {
-    return apiFetch(`/api/ratings/products/${productId}/votes`, { token });
-}
-
-export async function saveProductVote(token, productId, vote) {
-    return apiFetch(`/api/ratings/products/${productId}/vote`, {
-        token,
-        method: 'PUT',
-        body: { vote },
-    });
-}
-
-export async function deleteProductVote(token, productId) {
-    return apiFetch(`/api/ratings/products/${productId}/vote`, {
-        token,
-        method: 'DELETE',
-    });
 }

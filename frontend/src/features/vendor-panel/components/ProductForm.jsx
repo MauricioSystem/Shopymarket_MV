@@ -39,7 +39,7 @@ export function ProductForm({
               name="category_id"
               value={productForm.category_id}
               onChange={(event) => setProductForm((current) => ({ ...current, category_id: event.target.value, subcategory_id: '' }))}
-              options={[{ label: 'Selecciona una categoría', value: '' }, ...categories.filter(c => c.type === 'product').map((category) => ({ value: category.id, label: category.name || `Categoría ${category.id}` }))]}
+              options={[{ label: 'Selecciona una categoría', value: '' }, ...categories.filter(c => c && c.type === 'product').map((category) => ({ value: category.id, label: category.name || `Categoría ${category.id}` }))]}
               required
             />
           </div>

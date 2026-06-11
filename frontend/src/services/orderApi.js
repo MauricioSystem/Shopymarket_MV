@@ -37,3 +37,21 @@ export const getOrderById = async (id, token) => {
   });
   return handleResponse(res);
 };
+
+export const getStoreOrders = async (storeId, token) => {
+  const res = await fetch(`${API_BASE_URL}/api/orders/store/${storeId}`, {
+    method: 'GET',
+    headers: getHeaders(token)
+  });
+  return handleResponse(res);
+};
+
+export const updateOrderStatus = async (orderId, status, token) => {
+  const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
+    method: 'PUT',
+    headers: getHeaders(token),
+    body: JSON.stringify({ status })
+  });
+  return handleResponse(res);
+};
+

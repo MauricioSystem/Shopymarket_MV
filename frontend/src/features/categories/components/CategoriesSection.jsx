@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useCategoriesData } from "../hooks/useCategoriesData";
+import Icon from "../../../components/ui/Icon";
 
 function formatDate(str) {
   if (!str) return "—";
@@ -139,7 +140,7 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
 
       {loadState === "error" && (
         <div className="flex flex-col items-center justify-center gap-2 py-24">
-          <p className="text-2xl">⚠️</p>
+          <Icon name="alert" className="h-8 w-8 text-red-400 mb-1" />
           <p className="text-sm text-red-400 font-semibold">{errorMsg}</p>
         </div>
       )}
@@ -155,12 +156,6 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
                 <th className="px-6 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
                   Tipo
                 </th>
-                <th className="px-6 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
-                  Descripción
-                </th>
-                <th className="px-6 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
-                  Creado
-                </th>
                 <th className="px-6 py-3 text-right text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
                   Acciones
                 </th>
@@ -170,7 +165,7 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
             <tbody className="divide-y divide-white/[0.02]">
               {filteredCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-sm text-white/40">
+                  <td colSpan={3} className="py-20 text-center text-sm text-white/40">
                     No hay categorías registradas aún.
                   </td>
                 </tr>
@@ -189,15 +184,12 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
                             : "border-blue-500/30 bg-blue-500/5 text-blue-400"
                         }`}
                       >
-                        {cat.type === "product" ? "🛍️ Producto" : "🔧 Servicio"}
+                        <span className="flex items-center gap-1.5">
+                          <Icon name={cat.type === "product" ? "market" : "wrench"} className="h-3.5 w-3.5" />
+                          <span>{cat.type === "product" ? "Producto" : "Servicio"}</span>
+                        </span>
                       </span>
                     </td>
-
-                    <td className="px-6 py-4 text-white/60">
-                      <p className="truncate">{cat.description || "—"}</p>
-                    </td>
-
-                    <td className="px-6 py-4 text-white/50">{formatDate(cat.created_at)}</td>
 
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -293,7 +285,10 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
                         : "border-white/10 bg-[#040912]/80 text-white/50 hover:border-white/20"
                     }`}
                   >
-                    🛍️ Producto
+                    <span className="flex items-center justify-center gap-1.5">
+                      <Icon name="market" className="h-4 w-4" />
+                      <span>Producto</span>
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -304,7 +299,10 @@ export default function CategoriesSection({ token, search, onCategoriesChange })
                         : "border-white/10 bg-[#040912]/80 text-white/50 hover:border-white/20"
                     }`}
                   >
-                    🔧 Servicio
+                    <span className="flex items-center justify-center gap-1.5">
+                      <Icon name="wrench" className="h-4 w-4" />
+                      <span>Servicio</span>
+                    </span>
                   </button>
                 </div>
               </div>

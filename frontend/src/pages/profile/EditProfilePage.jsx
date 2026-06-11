@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
-import BrandMark from "@/components/ui/BrandMark";
+import Navbar from "@/components/layout/Navbar";
+import VendorNavbar from "@/components/layout/VendorNavbar";
 import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
 import { getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
 import { updateUserProfileMultipart } from "@/services/usersApi";
@@ -264,29 +265,7 @@ export default function EditProfilePage() {
 
   return (
     <main data-mode={theme.mode} className={`min-h-screen theme-transition pb-16 ${theme.mainClass}`}>
-      <header className={`sticky top-0 z-30 px-6 py-3.5 ${theme.headerClass}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <BrandMark mode={theme.mode} tone={theme.mode === "customer" ? "dark" : "light"} />
-            <div className={`hidden h-5 w-px ${theme.dividerClass} sm:block`} />
-            <div className="hidden sm:block">
-              <p className={`text-xs font-semibold opacity-85 ${theme.titleText}`}>Editar Perfil</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              disabled={submitting}
-              onClick={() => navigate("/profile")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${theme.secondaryBtnClass}`}
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              <span>Cancelar</span>
-            </Button>
-          </div>
-        </div>
-      </header>
+      {role === AUTH_ROLES.VENDOR ? <VendorNavbar /> : <Navbar />}
 
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <div className={`${theme.cardClass}`}>

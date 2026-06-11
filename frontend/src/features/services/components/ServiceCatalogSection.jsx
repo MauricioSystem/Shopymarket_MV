@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import Icon from '@/components/ui/Icon';
 import { API_BASE_URL } from "@/config/appSettings";
 import { useServiceCatalog } from '../hooks/useServiceCatalog';
 
@@ -15,6 +16,9 @@ export function ServiceCatalogSection({
     token,
     existingServiceProfile,
     categories,
+    initialEditServiceId,
+    clearInitialEditServiceId,
+    searchQuery = "",
 }) {
     const {
         profileServices,
@@ -25,13 +29,19 @@ export function ServiceCatalogSection({
         setServiceForm,
         addingService,
         setAddingService,
+        editingService,
+        setEditingService,
         serviceImageFile,
         serviceImagePreview,
-        setServiceImageFile,
         setServiceImagePreview,
+        setServiceImageFile,
+        setErrorService,
         handleServiceImageChange,
         loadProfileServices,
         handleCreateService,
+        handleEditServiceClick,
+        handleUpdateService,
+        handleDeleteService,
     } = useServiceCatalog({ token, existingServiceProfile });
 
     useEffect(() => {
@@ -40,37 +50,78 @@ export function ServiceCatalogSection({
         }
     }, [existingServiceProfile?.id, loadProfileServices]);
 
+    useEffect(() => {
+        if (initialEditServiceId && profileServices.length > 0 && !editingService) {
+            const service = profileServices.find(s => Number(s.id) === Number(initialEditServiceId));
+            if (service) {
+                handleEditServiceClick(service);
+                if (clearInitialEditServiceId) {
+                    clearInitialEditServiceId();
+                }
+            }
+        }
+    }, [initialEditServiceId, profileServices, editingService, handleEditServiceClick, clearInitialEditServiceId]);
+
+    const resetFormState = () => {
+        setAddingService(false);
+        setEditingService(null);
+        setServiceForm({
+            name: '',
+            description: '',
+            price: '',
+            estimated_time: '',
+            image_url: '',
+            category_id: ''
+        });
+        setServiceImageFile(null);
+        setServiceImagePreview(null);
+        setErrorService(null);
+    };
+
+    const filteredServices = profileServices.filter(s => 
+        !searchQuery || 
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-4 gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-white tracking-wide">🔧 Gestión de Servicios</h2>
+                    <h2 className="text-xl font-bold text-white tracking-wide uppercase flex items-center gap-2">
+                        <Icon name="wrench" className="h-5 w-5 text-blue-400" />
+                        <span>Gestión de Servicios</span>
+                    </h2>
                     <p className="text-xs text-white/40 mt-1">Crea y gestiona la oferta de servicios profesionales de tu perfil.</p>
                 </div>
-                {!addingService && (
+                {!addingService && !editingService && (
                     <Button
-                        onClick={() => setAddingService(true)}
-                        className="bg-blue-500 text-white font-bold text-xs py-2 px-5 hover:bg-blue-600 shadow-[0_4px_15px_rgba(59,130,246,0.2)]"
+                        onClick={() => {
+                            resetFormState();
+                            setAddingService(true);
+                        }}
+                        className="bg-blue-500 text-white font-bold text-xs py-2 px-5 hover:bg-blue-600 rounded-none shadow-[0_4px_15px_rgba(59,130,246,0.2)]"
                     >
                         + Agregar Servicio
                     </Button>
                 )}
             </div>
 
-            {addingService && (
-                <form onSubmit={handleCreateService} className="rounded-2xl border border-blue-500/20 bg-white/[0.03] p-6 sm:p-8 space-y-6">
+            {(addingService || editingService) && (
+                <form onSubmit={editingService ? handleUpdateService : handleCreateService} className="rounded-none border border-blue-500/20 bg-white/[0.03] p-6 sm:p-8 space-y-6">
                     <div className="border-b border-white/10 pb-3 flex items-center justify-between">
                         <div>
-                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">Configurar Oferta de Servicio Profesional</h3>
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">
+                                {editingService ? 'Editar Servicio Profesional' : 'Configurar Oferta de Servicio Profesional'}
+                            </h3>
                             <p className="text-xs text-white/40 mt-1">Completa los detalles del servicio que vas a ofrecer a los clientes.</p>
                         </div>
-                        <span className="text-xs font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-3 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-3 py-1 rounded-none">
                             Modo Servicio
                         </span>
                     </div>
 
                     <div className="space-y-6">
-                        {/* Grupo 1: Definición de Servicio */}
                         <div className="space-y-4">
                             <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#f5d367]">1. Definición del Servicio</p>
                             <FieldGroup>
@@ -81,7 +132,7 @@ export function ServiceCatalogSection({
                                     value={serviceForm.name}
                                     onChange={(e) => setServiceForm(s => ({ ...s, name: e.target.value }))}
                                     required
-                                    helperText="Nombre comercial claro de la labor que realizarás."
+                                    className="rounded-none"
                                 />
                                 <div className="space-y-2">
                                     <Select
@@ -94,9 +145,10 @@ export function ServiceCatalogSection({
                                             ...categories.filter(c => c.type === 'service').map(c => ({ value: c.id, label: c.name }))
                                         ]}
                                         required
+                                        className="rounded-none"
                                     />
                                     {categories.filter(c => c.type === 'service').length === 0 ? (
-                                        <p className="text-xs text-amber-400/70">⚠️ El administrador aún no ha creado categorías de servicios.</p>
+                                        <p className="text-xs text-amber-400/70">El administrador aún no ha creado categorías de servicios.</p>
                                     ) : (
                                         <p className="text-xs text-white/30">Rubro profesional para clasificar tu labor.</p>
                                     )}
@@ -104,7 +156,6 @@ export function ServiceCatalogSection({
                             </FieldGroup>
                         </div>
 
-                        {/* Grupo 2: Esquema de Tarifas y Tiempos */}
                         <div className="space-y-4 pt-4 border-t border-white/5">
                             <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#f5d367]">2. Costos y Tiempos de Entrega</p>
                             <FieldGroup>
@@ -117,7 +168,7 @@ export function ServiceCatalogSection({
                                     value={serviceForm.price}
                                     onChange={(e) => setServiceForm(s => ({ ...s, price: e.target.value }))}
                                     required
-                                    helperText="Costo base o precio inicial estimado del servicio."
+                                    className="rounded-none"
                                 />
                                 <Input
                                     label="Tiempo Estimado de Ejecución *"
@@ -126,42 +177,40 @@ export function ServiceCatalogSection({
                                     value={serviceForm.estimated_time}
                                     onChange={(e) => setServiceForm(s => ({ ...s, estimated_time: e.target.value }))}
                                     required
-                                    helperText="Duración aproximada del trabajo a realizar."
+                                    className="rounded-none"
                                 />
                             </FieldGroup>
                         </div>
 
-                        {/* Grupo 3: Portafolio e Imagen */}
                         <div className="space-y-4 pt-4 border-t border-white/5">
                             <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#f5d367]">3. Portafolio y Multimedia</p>
                             <Input
-                                label="Imagen de Referencia / Portafolio *"
+                                label={editingService ? "Imagen del servicio (opcional)" : "Imagen de Referencia / Portafolio *"}
                                 name="s_image"
                                 type="file"
                                 accept=".png, .jpg, .jpeg"
                                 onChange={handleServiceImageChange}
-                                required
-                                helperText="Sube una foto que ilustre tu trabajo o portafolio previo. Formatos: PNG, JPG, JPEG. Máx: 5MB"
+                                required={!editingService}
+                                className="rounded-none"
                             />
                             {serviceImagePreview && (
                                 <div className="mt-2">
                                     <p className="text-xs text-white/40 mb-1">Previsualización de la imagen:</p>
-                                    <img src={serviceImagePreview} alt="Vista previa del servicio" className="h-20 w-20 object-cover rounded-xl border border-white/10" />
+                                    <img src={serviceImagePreview} alt="Vista previa" className="h-20 w-20 object-cover rounded-none border border-white/10" />
                                 </div>
                             )}
                         </div>
 
-                        {/* Grupo 4: Alcance y Exclusiones */}
                         <div className="space-y-4 pt-4 border-t border-white/5">
                             <label className="block space-y-2">
-                                <span className="block text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                                <span className="block text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
                                     Descripción, Alcance y Exclusiones *
                                 </span>
                                 <span className="block text-[0.7rem] text-white/40 leading-relaxed">
-                                    Describe qué incluye el servicio (ej. materiales básicos, viáticos), qué no incluye (ej. repuestos principales) y qué requisitos debe cumplir el cliente (ej. acceso a agua/electricidad).
+                                    Describe qué incluye el servicio (ej. materiales básicos, viáticos), qué no incluye (ej. repuestos principales) y qué requisitos debe cumplir el cliente.
                                 </span>
                                 <textarea
-                                    className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] py-3 px-4 text-sm text-[var(--text)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--ring)] min-h-[120px] resize-y"
+                                    className="w-full rounded-none border border-white/10 bg-slate-900 py-3 px-4 text-sm text-white outline-none transition-all placeholder:text-white/30 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 min-h-[120px] resize-y"
                                     placeholder="Especifica el alcance del trabajo profesional..."
                                     name="s_desc"
                                     value={serviceForm.description}
@@ -173,21 +222,17 @@ export function ServiceCatalogSection({
                     </div>
 
                     {errorService && (
-                        <div className="text-xs text-red-400 font-bold bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
+                        <div className="text-xs text-red-400 font-bold bg-red-500/10 border border-red-500/20 p-3 rounded-none">
                             ⚠️ {errorService}
                         </div>
                     )}
 
                     <div className="flex gap-3 justify-end pt-4 border-t border-white/5">
-                        <Button type="button" variant="secondary" onClick={() => {
-                            setAddingService(false);
-                            setServiceImageFile(null);
-                            setServiceImagePreview(null);
-                        }}>
+                        <Button type="button" variant="secondary" className="rounded-none" onClick={resetFormState}>
                             Cancelar
                         </Button>
-                        <Button type="submit" loading={savingService} className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6">
-                            Publicar Oferta de Servicio
+                        <Button type="submit" loading={savingService} className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 rounded-none">
+                            {editingService ? 'Guardar Cambios' : 'Publicar Oferta de Servicio'}
                         </Button>
                     </div>
                 </form>
@@ -195,36 +240,57 @@ export function ServiceCatalogSection({
 
             {loadingServices ? (
                 <div className="text-sm text-white/40 text-center py-10 animate-pulse">Cargando servicios ofrecidos...</div>
-            ) : profileServices.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center text-sm text-white/40">
-                    🔧 Aún no has publicado ningún servicio profesional en tu perfil.
+            ) : filteredServices.length === 0 ? (
+                <div className="rounded-none border border-dashed border-white/10 bg-white/[0.02] p-12 text-center text-sm text-white/40">
+                    {searchQuery ? "No se encontraron servicios con la búsqueda actual." : "Aún no has publicado ningún servicio profesional en tu perfil."}
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {profileServices.map(s => {
+                    {filteredServices.map(s => {
                         const sImg = s.image_url ? (s.image_url.startsWith('http') ? s.image_url : `${API_BASE}${s.image_url}`) : null;
                         return (
-                            <div key={s.id} className="rounded-2xl border border-white/5 bg-white/[0.03] p-5 flex flex-col justify-between gap-4 hover:border-white/10 transition-colors">
+                            <div key={s.id} className="rounded-none border border-white/5 bg-white/[0.03] p-5 flex flex-col justify-between gap-4 hover:border-white/10 transition-colors">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0 flex-1">
                                         <p className="font-bold text-sm text-white truncate">{s.name}</p>
                                         <p className="text-xs text-white/40 mt-1.5 line-clamp-2 leading-relaxed">{s.description || 'Sin descripción'}</p>
                                     </div>
-                                    <div className="h-12 w-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl shrink-0">
+                                    <div className="h-12 w-12 rounded-none bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 overflow-hidden">
                                         {sImg ? (
-                                            <img src={sImg} alt={s.name} className="h-full w-full object-cover rounded-2xl" />
+                                            <img src={sImg} alt={s.name} className="h-full w-full object-cover" />
                                         ) : (
-                                            '🔧'
+                                            <Icon name="wrench" className="h-5 w-5 text-blue-400" />
                                         )}
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center pt-3 border-t border-white/5">
-                                    <span className="rounded-full bg-[#f5d367]/10 text-[#f5d367] border border-[#f5d367]/20 text-[0.7rem] font-bold px-3 py-1">
+                                    <span className="rounded-none bg-[#f5d367]/10 text-[#f5d367] border border-[#f5d367]/20 text-[0.7rem] font-bold px-3 py-1">
                                         Bs {Number(s.price).toFixed(2)}
                                     </span>
                                     {s.estimated_time && (
-                                        <span className="text-[0.7rem] text-white/40 font-semibold">⏱ {s.estimated_time}</span>
+                                        <span className="text-[0.7rem] text-white/40 font-semibold flex items-center gap-1">
+                                            <Icon name="clock" className="h-3 w-3 text-white/30" />
+                                            <span>{s.estimated_time}</span>
+                                        </span>
                                     )}
+                                </div>
+                                <div className="flex gap-2 pt-3 mt-1 border-t border-white/5">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleEditServiceClick(s)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-none bg-white/5 hover:bg-blue-500/10 text-xs font-bold text-white/80 hover:text-blue-400 border border-white/5 hover:border-blue-500/20 transition-all cursor-pointer"
+                                    >
+                                        <Icon name="edit" className="w-3.5 h-3.5" />
+                                        <span>Editar</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteService(s.id)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-none bg-red-500/5 hover:bg-red-500/10 text-xs font-bold text-red-400/80 hover:text-red-400 border border-red-500/5 hover:border-red-500/20 transition-all cursor-pointer"
+                                    >
+                                        <Icon name="trash" className="w-3.5 h-3.5 text-red-400" />
+                                        <span>Eliminar</span>
+                                    </button>
                                 </div>
                             </div>
                         );

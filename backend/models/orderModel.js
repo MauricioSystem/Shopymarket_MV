@@ -85,10 +85,12 @@ const createOrderInTransaction = async (orderData) => {
 
 const getOrderById = async (orderId) => {
     const query = `
-        SELECT id, customer_user_id, store_id, delivery_user_id, order_type, status, 
-               subtotal, discount, shipping_cost, total, delivery_address, created_at
-        FROM orders
-        WHERE id = $1
+        SELECT o.id, o.customer_user_id, o.store_id, o.delivery_user_id, o.order_type, o.status, 
+               o.subtotal, o.discount, o.shipping_cost, o.total, o.delivery_address, o.created_at,
+               (u.first_name || ' ' || COALESCE(u.last_name, '')) AS customer_name, u.email AS customer_email
+        FROM orders o
+        LEFT JOIN users u ON o.customer_user_id = u.id
+        WHERE o.id = $1
     `;
     const result = await pool.query(query, [orderId]);
     return result.rows[0] || null;
@@ -122,11 +124,13 @@ const getOrdersByCustomerId = async (customerId) => {
 
 const getOrdersByStoreId = async (storeId) => {
     const query = `
-        SELECT id, customer_user_id, store_id, delivery_user_id, order_type, status, 
-               subtotal, discount, shipping_cost, total, delivery_address, created_at
-        FROM orders
-        WHERE store_id = $1
-        ORDER BY created_at DESC
+        SELECT o.id, o.customer_user_id, o.store_id, o.delivery_user_id, o.order_type, o.status, 
+               o.subtotal, o.discount, o.shipping_cost, o.total, o.delivery_address, o.created_at,
+               (u.first_name || ' ' || COALESCE(u.last_name, '')) AS customer_name, u.email AS customer_email
+        FROM orders o
+        LEFT JOIN users u ON o.customer_user_id = u.id
+        WHERE o.store_id = $1
+        ORDER BY o.created_at DESC
     `;
     const result = await pool.query(query, [storeId]);
     return result.rows;

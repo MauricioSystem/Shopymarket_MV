@@ -33,7 +33,7 @@ export function ServiceForm({
               name="category_id"
               value={serviceForm.category_id}
               onChange={(event) => setServiceForm((current) => ({ ...current, category_id: event.target.value }))}
-              options={[{ label: 'Selecciona una categoría', value: '' }, ...categories.filter(c => c.type === 'service').map((category) => ({ value: category.id, label: category.name || `Categoría ${category.id}` }))]}
+              options={[{ label: 'Selecciona una categoría', value: '' }, ...categories.filter(c => c && c.type === 'service').map((category) => ({ value: category.id, label: category.name || `Categoría ${category.id}` }))]}
               required
             />
           </div>

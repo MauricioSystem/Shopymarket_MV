@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
-import BrandMark from "@/components/ui/BrandMark";
+import Navbar from "@/components/layout/Navbar";
+import VendorNavbar from "@/components/layout/VendorNavbar";
+import Icon from "@/components/ui/Icon";
 import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
 import { getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
 import { getStoreByUserId, getServiceProfileByUserId, updateMyStore, updateServiceProfile } from "@/services/marketApi";
@@ -169,34 +171,7 @@ export default function ProfilePage() {
 
   return (
     <main data-mode={theme.mode} className={`min-h-screen theme-transition pb-16 ${theme.mainClass}`}>
-      <header className={`sticky top-0 z-30 px-6 py-3.5 ${theme.headerClass}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <BrandMark mode={theme.mode} tone={theme.mode === "customer" ? "dark" : "light"} />
-            <div className={`hidden h-5 w-px ${theme.dividerClass} sm:block`} />
-            <div className="hidden sm:block">
-              <p className={`text-xs font-semibold opacity-80 ${theme.titleText}`}>Perfil de Usuario</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              onClick={() => {
-                if (role === AUTH_ROLES.CUSTOMER) {
-                  navigate("/home");
-                } else {
-                  navigate("/dashboard");
-                }
-              }}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${theme.secondaryBtnClass}`}
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              <span>Volver</span>
-            </Button>
-          </div>
-        </div>
-      </header>
+      {role === AUTH_ROLES.VENDOR ? <VendorNavbar /> : <Navbar />}
 
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
         <div className={`${theme.cardClass} overflow-hidden relative`}>
@@ -230,6 +205,16 @@ export default function ProfilePage() {
                     <EditIcon className="h-3.5 w-3.5" />
                     <span>Editar Perfil</span>
                   </Button>
+                  
+                  {role === AUTH_ROLES.VENDOR && (
+                    <Button
+                      onClick={() => navigate("/dashboard/vendor")}
+                      className={`flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold w-full ${theme.secondaryBtnClass}`}
+                    >
+                      <Icon name="store" className="h-3.5 w-3.5" />
+                      <span>Volver al Dashboard</span>
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -306,9 +291,10 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={handleDeleteAccount}
-                    className="rounded-xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-500 hover:text-red-400 px-4 py-2 text-xs font-bold transition-all shadow-[0_2px_10px_rgba(239,68,68,0.1)] cursor-pointer select-none"
+                    className="rounded-xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-500 hover:text-red-400 px-4 py-2 text-xs font-bold transition-all shadow-[0_2px_10px_rgba(239,68,68,0.1)] cursor-pointer select-none flex items-center justify-center gap-1.5 ml-auto"
                   >
-                    🗑️ Borrar Cuenta
+                    <Icon name="trash" className="h-3.5 w-3.5" />
+                    <span>Borrar Cuenta</span>
                   </button>
                 </div>
               </div>

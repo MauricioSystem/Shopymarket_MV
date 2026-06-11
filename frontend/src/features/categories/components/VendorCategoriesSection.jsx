@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import Icon from '@/components/ui/Icon';
 
 export function VendorCategoriesSection({
     categories,
@@ -12,7 +13,10 @@ export function VendorCategoriesSection({
         <div className="grid gap-8 md:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
                 <div>
-                    <h2 className="text-lg font-bold text-white">🗂️ Categorías de la Plataforma</h2>
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Icon name="folder" className="h-5 w-5 text-blue-400 shrink-0" />
+                        <span>Categorías de la Plataforma</span>
+                    </h2>
                     <p className="text-xs text-white/40 mt-1">Categorías globales disponibles en la plataforma para clasificar tus productos o servicios.</p>
                 </div>
 
@@ -30,7 +34,10 @@ export function VendorCategoriesSection({
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
                 <div>
-                    <h2 className="text-lg font-bold text-white">🏷️ Crea tus Categorias Personalizadas</h2>
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Icon name="list" className="h-5 w-5 text-blue-400 shrink-0" />
+                        <span>Crea tus Categorías Personalizadas</span>
+                    </h2>
                     <p className="text-xs text-white/40 mt-1">Crea subcategorías específicas para organizar los productos de tu tienda.</p>
                 </div>
 

@@ -23,7 +23,7 @@ function Select({
         <select
           id={selectId}
           className={cx(
-            "w-full appearance-none rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm text-[var(--text)] outline-none transition-all focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--ring)] pr-10",
+            "w-full appearance-none rounded-none border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm text-[var(--text)] outline-none transition-all focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--ring)] pr-10",
             className,
           )}
           {...props}

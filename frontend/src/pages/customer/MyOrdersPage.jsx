@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import { AUTH_ROLES, normalizeFrontendRole } from "@/utils/authRoles";
+import Icon from "@/components/ui/Icon";
 
 export default function MyOrdersPage() {
   const { role } = useAuth();
@@ -20,8 +21,8 @@ export default function MyOrdersPage() {
       <div className="min-h-screen bg-[#faf9f5]">
         <Navbar />
         <div className="flex h-[80vh] items-center justify-center p-4">
-          <div className="text-center bg-white p-8 rounded-3xl shadow-sm max-w-md w-full border border-slate-100">
-            <span className="text-6xl mb-4 block">🚫</span>
+          <div className="text-center bg-white p-8 rounded-3xl shadow-sm max-w-md w-full border border-slate-100 flex flex-col items-center">
+            <Icon name="ban" className="h-16 w-16 text-slate-300 opacity-60 mb-4" />
             <h2 className="text-xl font-bold text-slate-800">Acceso denegado</h2>
             <p className="text-slate-500 mt-2 text-sm">Esta vista es exclusiva para clientes compradores.</p>
             <Button onClick={() => navigate("/dashboard")} className="mt-6 bg-[#c8960c] text-white w-full rounded-full font-bold">
@@ -51,23 +52,25 @@ export default function MyOrdersPage() {
         <div className="flex bg-white rounded-full p-1.5 border border-slate-200 w-full max-w-md mx-auto md:mx-0 mb-10 shadow-sm">
           <button
             onClick={() => setActiveTab("products")}
-            className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all ${
+            className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === "products"
                 ? "bg-[#1a1200] text-[#fff8df] shadow-md"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            📦 Productos Físicos
+            <Icon name="box" className="h-4 w-4" />
+            <span>Productos Físicos</span>
           </button>
           <button
             onClick={() => setActiveTab("services")}
-            className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all ${
+            className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === "services"
                 ? "bg-blue-600 text-white shadow-md"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            🔧 Servicios Agendados
+            <Icon name="wrench" className="h-4 w-4" />
+            <span>Servicios Agendados</span>
           </button>
         </div>
 
@@ -79,7 +82,7 @@ export default function MyOrdersPage() {
               {mockProductOrders.length === 0 ? (
                 <div className="text-center space-y-4">
                   <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-4xl">🛍️</span>
+                    <Icon name="market" className="h-10 w-10 text-slate-300 opacity-60" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800">Aún no has comprado productos</h3>
                   <p className="text-slate-500 text-sm max-w-sm mx-auto">
@@ -102,7 +105,7 @@ export default function MyOrdersPage() {
               {mockServiceBookings.length === 0 ? (
                 <div className="text-center space-y-4 animate-fade-in">
                   <div className="w-24 h-24 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-4xl">📅</span>
+                    <Icon name="calendar" className="h-10 w-10 text-blue-400 opacity-60" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800">No tienes servicios agendados</h3>
                   <p className="text-slate-500 text-sm max-w-sm mx-auto">

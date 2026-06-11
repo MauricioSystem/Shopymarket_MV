@@ -5,22 +5,20 @@ import { useCart } from "@/context/CartContext";
 import {
   getAllProducts,
   getAllStores,
-  getProductVotes,
-  saveProductVote,
-  deleteProductVote,
 } from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
+import Icon from "@/components/ui/Icon";
 import { API_BASE_URL } from "@/config/appSettings";
-import { AUTH_ROLES } from "@/utils/authRoles";
 import { ProductVotePanel } from "@/components/RatingActions";
+import { getItemLikes, submitItemVote } from "@/utils/ratingStorage";
 
 const API_BASE = API_BASE_URL;
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, token, role } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { addToCart, openCart } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -38,13 +36,23 @@ export default function ProductDetailPage() {
     async function fetchProduct() {
       try {
         setLoading(true);
-        // Obtener todos los productos y buscar por ID (idealmente tendríamos un getProductById en la API)
         const [productsRes, storesRes] = await Promise.all([
           getAllProducts(null),
           getAllStores(null)
         ]);
 
-        const productsList = Array.isArray(productsRes) ? productsRes : productsRes.data; if (productsList) { const found = productsList.find(p => Number(p.id) === Number(id)); if (found) { setProduct(found); const votes = await getProductVotes(token, found.id).catch(() => null); setVoteStats(votes); const storesList = Array.isArray(storesRes) ? storesRes : storesRes.data; if (storesList) { const s = storesList.find(st => Number(st.id) === Number(found.store_id)); if (s) setStore(s); }
+        const productsList = Array.isArray(productsRes) ? productsRes : productsRes.data;
+        if (productsList) {
+          const found = productsList.find(p => Number(p.id) === Number(id));
+          if (found) {
+            const likesData = getItemLikes(found.id, "product");
+            setProduct(found);
+            setVoteStats(likesData);
+            const storesList = Array.isArray(storesRes) ? storesRes : storesRes.data;
+            if (storesList) {
+              const s = storesList.find(st => Number(st.id) === Number(found.store_id));
+              if (s) setStore(s);
+            }
           } else {
             setError("Producto no encontrado.");
           }
@@ -56,7 +64,18 @@ export default function ProductDetailPage() {
       }
     }
     if (id) fetchProduct();
-  }, [id, token]);
+  }, [id]);
+
+  const isOwner = isAuthenticated && user && store && Number(store.admin_user_id) === Number(user.id);
+
+  useEffect(() => {
+    if (isOwner && product) {
+      navigate("/dashboard/vendor", {
+        replace: true,
+        state: { activeTab: "products", editProductId: product.id }
+      });
+    }
+  }, [isOwner, product, navigate]);
 
   const handleBuy = async () => {
     if (!isAuthenticated) {
@@ -88,41 +107,18 @@ export default function ProductDetailPage() {
       return;
     }
 
-    if (role !== AUTH_ROLES.CUSTOMER) {
-      setVoteMessage({ type: "error", text: "Solo los usuarios pueden votar." });
-      return;
-    }
-
     setVoteLoading(true);
     setVoteMessage(null);
 
     try {
-      const result = await saveProductVote(token, product.id, vote);
-      setVoteStats(result.stats);
-      setProduct((current) => ({ ...current, ...result.stats }));
-      setVoteMessage({ type: "success", text: "Voto guardado." });
+      const userId = user?.id || user?.email || "logged_in_user";
+      const newStats = submitItemVote(product.id, "product", userId, vote === 1 ? "like" : "dislike");
+      if (newStats) {
+        setVoteStats(newStats);
+        setVoteMessage({ type: "success", text: "Voto guardado." });
+      }
     } catch (err) {
       setVoteMessage({ type: "error", text: err?.message || "No se pudo guardar el voto." });
-    } finally {
-      setVoteLoading(false);
-    }
-  };
-
-  const handleClearVote = async () => {
-    if (!isAuthenticated || role !== AUTH_ROLES.CUSTOMER) {
-      return;
-    }
-
-    setVoteLoading(true);
-    setVoteMessage(null);
-
-    try {
-      const result = await deleteProductVote(token, product.id);
-      setVoteStats(result.stats);
-      setProduct((current) => ({ ...current, ...result.stats }));
-      setVoteMessage({ type: "success", text: "Voto eliminado." });
-    } catch (err) {
-      setVoteMessage({ type: "error", text: err?.message || "No se pudo eliminar el voto." });
     } finally {
       setVoteLoading(false);
     }
@@ -133,7 +129,7 @@ export default function ProductDetailPage() {
       <div className="min-h-screen bg-[#faf9f5]">
         <Navbar />
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="w-12 h-12 border-4 border-[#c8960c] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-[#c8960c] border-t-transparent rounded-none animate-spin"></div>
         </div>
       </div>
     );
@@ -144,11 +140,11 @@ export default function ProductDetailPage() {
       <div className="min-h-screen bg-[#faf9f5]">
         <Navbar />
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="text-center p-8 bg-white rounded-lg shadow-xl max-w-md w-full">
-            <span className="text-6xl mb-4 block">🛍️</span>
+          <div className="text-center p-8 bg-white rounded-none shadow-xl max-w-md w-full flex flex-col items-center">
+            <Icon name="market" className="h-16 w-16 text-slate-400 mb-4" />
             <h2 className="text-2xl font-bold text-slate-800">Producto no encontrado</h2>
             <p className="text-slate-500 mt-2">{error}</p>
-            <Button onClick={() => navigate(-1)} className="mt-6 bg-[#1a1200] text-white rounded-full">
+            <Button onClick={() => navigate(-1)} className="mt-6 bg-[#1a1200] text-white rounded-none">
               Volver Atrás
             </Button>
           </div>
@@ -158,7 +154,7 @@ export default function ProductDetailPage() {
   }
 
   const imageUrl = product.image_url ? (product.image_url.startsWith("http") ? product.image_url : `${API_BASE}${product.image_url}`) : null;
-  const canVote = isAuthenticated && role === AUTH_ROLES.CUSTOMER;
+  const canVote = isAuthenticated && !isOwner;
 
   return (
     <div className="min-h-screen bg-[#faf9f5] flex flex-col font-sans">
@@ -166,11 +162,11 @@ export default function ProductDetailPage() {
       
       <main className="flex-1 flex flex-col md:flex-row w-full max-w-7xl mx-auto md:py-10 bg-white md:bg-transparent">
         {/* Izquierda: Multimedia */}
-        <div className="relative w-full md:w-1/2 bg-white md:rounded-l-lg p-6 md:p-12 flex items-center justify-center min-h-[400px] md:shadow-2xl">
+        <div className="relative w-full md:w-1/2 bg-white md:rounded-none p-6 md:p-12 flex items-center justify-center min-h-[400px] md:shadow-2xl">
           {store && (
             <button
               onClick={() => navigate(`/store/${encodeURIComponent(store.name)}`)}
-              className="absolute top-6 left-6 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 z-10 bg-white/80 px-3 py-1.5 rounded-md shadow-sm backdrop-blur-sm"
+              className="absolute top-6 left-6 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 z-10 bg-white/80 px-3 py-1.5 rounded-none shadow-sm backdrop-blur-sm"
             >
               ← Ir a la tienda
             </button>
@@ -178,12 +174,15 @@ export default function ProductDetailPage() {
           {imageUrl ? (
             <img src={imageUrl} alt={product.name} className="max-w-full max-h-[500px] object-contain drop-shadow-xl" />
           ) : (
-            <span className="text-8xl opacity-20 block text-center w-full">🛍️<br/><span className="text-2xl mt-4">Sin imagen</span></span>
+            <div className="flex flex-col items-center opacity-25 text-slate-800">
+              <Icon name="market" className="h-20 w-20" />
+              <span className="text-lg mt-3 font-semibold">Sin imagen</span>
+            </div>
           )}
         </div>
 
         {/* Derecha: Info y Checkout */}
-        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white md:rounded-r-lg md:shadow-2xl md:border-l border-slate-100">
+        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white md:rounded-none md:shadow-2xl md:border-l border-slate-100">
           <div className="space-y-6 flex-1">
             <div className="space-y-4">
               <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight">
@@ -204,33 +203,34 @@ export default function ProductDetailPage() {
             </div>
 
             <ProductVotePanel
-              stats={voteStats || product}
+              likes={voteStats?.likes || 0}
+              dislikes={voteStats?.dislikes || 0}
+              userVote={user?.id || user?.email ? voteStats?.userVotes?.[user?.id || user?.email] || 0 : 0}
               canInteract={canVote}
               onVote={handleVote}
-              onClearVote={handleClearVote}
               loading={voteLoading}
               message={voteMessage}
             />
             
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex items-center bg-slate-100 rounded-full shrink-0 w-full sm:w-auto justify-between p-1">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className={`w-12 h-12 flex items-center justify-center font-bold text-xl rounded-full transition-colors ${quantity <= 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-white hover:shadow'}`}>-</button>
+                <div className="flex items-center bg-slate-100 rounded-none shrink-0 w-full sm:w-auto justify-between p-1">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className={`w-12 h-12 flex items-center justify-center font-bold text-xl rounded-none transition-colors ${quantity <= 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-white hover:shadow'}`}>-</button>
                   <span className="w-12 text-center text-lg font-bold text-slate-900">{quantity}</span>
-                  <button onClick={() => setQuantity(product.stock !== undefined ? Math.min(product.stock, quantity + 1) : quantity + 1)} disabled={product.stock !== undefined && quantity >= product.stock} className={`w-12 h-12 flex items-center justify-center font-bold text-xl rounded-full transition-colors ${product.stock !== undefined && quantity >= product.stock ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-white hover:shadow'}`}>+</button>
+                  <button onClick={() => setQuantity(product.stock !== undefined ? Math.min(product.stock, quantity + 1) : quantity + 1)} disabled={product.stock !== undefined && quantity >= product.stock} className={`w-12 h-12 flex items-center justify-center font-bold text-xl rounded-none transition-colors ${product.stock !== undefined && quantity >= product.stock ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-white hover:shadow'}`}>+</button>
                 </div>
                 
                 <Button 
                   onClick={handleBuy}
                   disabled={buyLoading || (product.stock !== undefined && product.stock <= 0)}
-                  className="w-full sm:flex-1 bg-[#1a1200] text-[#fff8df] font-bold py-4 rounded-full hover:opacity-90 shadow-xl shadow-black/10 transition-all text-lg truncate"
+                  className="w-full sm:flex-1 bg-[#1a1200] text-[#fff8df] font-bold py-4 rounded-none hover:opacity-90 shadow-xl shadow-black/10 transition-all text-lg truncate"
                 >
                   {buyLoading ? 'Agregando...' : 'Agregar al Carrito'}
                 </Button>
               </div>
 
               {buyMessage && (
-                <div className={`px-4 py-3 rounded-md text-sm font-semibold text-center ${
+                <div className={`px-4 py-3 rounded-none text-sm font-semibold text-center ${
                   buyMessage.type === 'success'
                     ? 'bg-green-50 text-green-700 border border-green-200'
                     : 'bg-red-50 text-red-700 border border-red-200'
@@ -240,8 +240,14 @@ export default function ProductDetailPage() {
               )}
 
               <div className="grid grid-cols-2 gap-4 text-sm text-slate-500 pt-4">
-                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-md"><span className="text-2xl">🚚</span> <span>Envío local rápido</span></div>
-                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-md"><span className="text-2xl">🛡️</span> <span>Compra garantizada</span></div>
+                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-none">
+                  <Icon name="truck" className="h-6 w-6 text-[#c8960c] shrink-0" />
+                  <span>Envío local rápido</span>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-none">
+                  <Icon name="check" className="h-6 w-6 text-[#c8960c] shrink-0" />
+                  <span>Calidad Garantizada</span>
+                </div>
               </div>
             </div>
           </div>
@@ -250,5 +256,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-

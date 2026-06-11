@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useStoresData } from "../hooks/useStoresData";
 import { getAllUsers } from "@/services/usersApi";
 import { getDisplayName } from "@/utils/userCapabilities";
+import Icon from "../../../components/ui/Icon";
 
 function formatDate(str) {
   if (!str) return "—";
@@ -158,7 +159,7 @@ export default function StoresSection({ token, search, onEditStoreAndProducts, o
 
       {loadState === "error" && (
         <div className="flex flex-col items-center justify-center gap-2 py-24">
-          <p className="text-2xl">⚠️</p>
+          <Icon name="alert" className="h-8 w-8 text-red-400 mb-1" />
           <p className="text-sm text-red-400 font-semibold">{errorMsg}</p>
         </div>
       )}
@@ -230,9 +231,24 @@ export default function StoresSection({ token, search, onEditStoreAndProducts, o
                               : "border-purple-500/30 bg-purple-500/5 text-purple-400"
                           }`}
                         >
-                          {biz.type === "product" && "🛍️ Producto"}
-                          {biz.type === "service" && "🔧 Servicio"}
-                          {biz.type === "hybrid" && "🏪 Híbrido"}
+                          {biz.type === "product" && (
+                            <span className="flex items-center gap-1.5">
+                              <Icon name="market" className="h-3.5 w-3.5" />
+                              <span>Producto</span>
+                            </span>
+                          )}
+                          {biz.type === "service" && (
+                            <span className="flex items-center gap-1.5">
+                              <Icon name="wrench" className="h-3.5 w-3.5" />
+                              <span>Servicio</span>
+                            </span>
+                          )}
+                          {biz.type === "hybrid" && (
+                            <span className="flex items-center gap-1.5">
+                              <Icon name="store" className="h-3.5 w-3.5" />
+                              <span>Híbrido</span>
+                            </span>
+                          )}
                         </span>
                       </td>
 
@@ -261,30 +277,33 @@ export default function StoresSection({ token, search, onEditStoreAndProducts, o
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(biz)}
-                              className="rounded-full bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer"
+                              className="rounded-full bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                               title="Aprobar Tienda"
                             >
-                              ✔️ Aprobar
+                              <Icon name="check" className="h-3.5 w-3.5" />
+                              <span>Aprobar</span>
                             </button>
                           )}
                           {biz.status === "active" && (
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(biz)}
-                              className="rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer"
+                              className="rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                               title="Desactivar Tienda"
                             >
-                              ❌ Desactivar
+                              <Icon name="ban" className="h-3.5 w-3.5" />
+                              <span>Desactivar</span>
                             </button>
                           )}
                           {biz.status === "inactive" && (
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(biz)}
-                              className="rounded-full bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer"
+                              className="rounded-full bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                               title="Activar Tienda"
                             >
-                              ✔️ Activar
+                              <Icon name="check" className="h-3.5 w-3.5" />
+                              <span>Activar</span>
                             </button>
                           )}
 

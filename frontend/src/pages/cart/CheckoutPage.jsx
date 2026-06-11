@@ -6,6 +6,7 @@ import Navbar from '../../components/layout/Navbar';
 import Button from '../../components/ui/Button';
 import { API_BASE_URL } from "@/config/appSettings";
 import { createOrder } from '../../services/orderApi';
+import Icon from '../../components/ui/Icon';
 
 const API_BASE = API_BASE_URL;
 const getImageUrl = (url) => url ? (url.startsWith("http") ? url : `${API_BASE}${url}`) : null;
@@ -93,8 +94,8 @@ function StepCart({ cartItems, cartTotal, onNext }) {
   const navigate = useNavigate();
   if (cartItems.length === 0) {
     return (
-      <div className="bg-white rounded-3xl border border-slate-100 p-16 text-center space-y-6 shadow-sm">
-        <span className="text-6xl opacity-40 block">🛒</span>
+      <div className="bg-white rounded-3xl border border-slate-100 p-16 text-center space-y-6 shadow-sm flex flex-col items-center">
+        <Icon name="cart" className="h-16 w-16 text-slate-300 opacity-60 mx-auto" />
         <h2 className="text-2xl font-bold text-slate-900">Tu carrito está vacío</h2>
         <p className="text-slate-500">Explora nuestras tiendas y encuentra lo que necesitas.</p>
         <Button onClick={() => navigate('/market')} className="bg-[#1a1200] text-[#fff8df] rounded-full px-8 py-3 font-bold hover:opacity-90">
@@ -115,7 +116,7 @@ function StepCart({ cartItems, cartTotal, onNext }) {
               <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
                 {item.product_image
                   ? <img src={getImageUrl(item.product_image)} alt={item.product_name} className="h-full w-full object-cover" />
-                  : <span className="text-3xl opacity-20">🛍️</span>}
+                  : <Icon name="market" className="h-8 w-8 text-slate-300 opacity-50" />}
               </div>
               <div className="flex-1 flex flex-col justify-between min-w-0">
                 <div>
@@ -199,8 +200,8 @@ function StepDelivery({ deliveryData, setDeliveryData, onNext, onBack }) {
       {/* Opciones de entrega */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
-          { value: 'pickup', icon: '🏪', title: 'Recoger en tienda', desc: 'Sin costo adicional. Coordina con la tienda.' },
-          { value: 'delivery', icon: '🚚', title: 'Delivery a domicilio', desc: 'Envío a tu dirección. Costo según zona.' },
+          { value: 'pickup', icon: 'store', title: 'Recoger en tienda', desc: 'Sin costo adicional. Coordina con la tienda.' },
+          { value: 'delivery', icon: 'truck', title: 'Delivery a domicilio', desc: 'Envío a tu dirección. Costo según zona.' },
         ].map((opt) => (
           <button
             key={opt.value}
@@ -211,7 +212,9 @@ function StepDelivery({ deliveryData, setDeliveryData, onNext, onBack }) {
                 : 'border-slate-200 hover:border-slate-300 bg-white'
             }`}
           >
-            <div className="text-3xl mb-3">{opt.icon}</div>
+            <div className="mb-3">
+              <Icon name={opt.icon} className="h-8 w-8 text-[#c8960c]" />
+            </div>
             <p className="font-bold text-slate-900 text-sm">{opt.title}</p>
             <p className="text-xs text-slate-500 mt-1">{opt.desc}</p>
           </button>
@@ -235,9 +238,12 @@ function StepDelivery({ deliveryData, setDeliveryData, onNext, onBack }) {
 
       {/* Si elige pickup, mostrar info */}
       {deliveryData.method === 'pickup' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 animate-fade-in">
-          <p className="font-bold mb-1">📍 Información de recogida</p>
-          <p>Una vez confirmado tu pedido, la tienda te contactará para coordinar el horario y punto de recogida.</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 animate-fade-in flex items-start gap-2.5">
+          <Icon name="pin" className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold mb-1">Información de recogida</p>
+            <p>Una vez confirmado tu pedido, la tienda te contactará para coordinar el horario y punto de recogida.</p>
+          </div>
         </div>
       )}
 
@@ -266,10 +272,10 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
   const placingRef = useRef(false);
 
   const allPaymentMethods = [
-    { value: 'card', icon: '💳', label: 'Tarjeta de crédito / débito' },
-    { value: 'transfer', icon: '🏦', label: 'Transferencia bancaria' },
-    { value: 'qr', icon: '📱', label: 'Pago QR (Bolivia)' },
-    { value: 'cash', icon: '💵', label: 'Efectivo al entregar' },
+    { value: 'card', icon: 'card', label: 'Tarjeta de crédito / débito' },
+    { value: 'transfer', icon: 'bank', label: 'Transferencia bancaria' },
+    { value: 'qr', icon: 'phone', label: 'Pago QR (Bolivia)' },
+    { value: 'cash', icon: 'cash', label: 'Efectivo al entregar' },
   ];
 
   const paymentMethods = deliveryData.method === 'delivery' 
@@ -325,25 +331,34 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
 
   if (placed) {
     return (
-      <div className="bg-white rounded-3xl border border-slate-100 p-12 md:p-16 text-center space-y-6 shadow-sm animate-fade-in">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-4xl">✅</div>
+      <div className="bg-white rounded-3xl border border-slate-100 p-12 md:p-16 text-center space-y-6 shadow-sm animate-fade-in flex flex-col items-center">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 border border-green-200 shadow-inner">
+          <Icon name="check" className="h-10 w-10" strokeWidth={3} />
+        </div>
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900">¡Pedido confirmado!</h2>
           <p className="text-slate-500 mt-2 max-w-sm mx-auto">Tu orden ha sido registrada. Recibirás un correo a <b>{billingData.email}</b> con los detalles.</p>
         </div>
-        <div className="inline-block bg-slate-50 border border-slate-200 rounded-2xl px-8 py-5 text-left space-y-3 text-sm text-slate-700 shadow-sm">
-          <p>📦 Método: <b className="text-slate-900">{deliveryData.method === 'pickup' ? 'Recogida en tienda' : 'Delivery a domicilio'}</b></p>
-          <p>💳 Pago: <b className="text-slate-900">{paymentMethods.find(m => m.value === paymentData.method)?.label}</b></p>
+        <div className="inline-block bg-slate-50 border border-slate-200 rounded-2xl px-8 py-5 text-left space-y-3 text-sm text-slate-700 shadow-sm w-full max-w-md mx-auto">
+          <p className="flex justify-between">
+            <span className="text-slate-500">Método:</span>
+            <b className="text-slate-900">{deliveryData.method === 'pickup' ? 'Recogida en tienda' : 'Delivery a domicilio'}</b>
+          </p>
+          <p className="flex justify-between">
+            <span className="text-slate-500">Pago:</span>
+            <b className="text-slate-900">{paymentMethods.find(m => m.value === paymentData.method)?.label}</b>
+          </p>
           <div className="border-t border-slate-200 pt-3 mt-1">
             <p className="flex justify-between items-center gap-6">
-              <span>Total Pagado:</span>
+              <span className="text-slate-500 font-semibold">Total Pagado:</span>
               <b className="text-[#c8960c] text-xl">Bs {Number(finalTotal || finalCalculatedTotal).toFixed(2)}</b>
             </p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-4">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-4 w-full">
           <Button onClick={() => alert("La impresión de facturas se implementará pronto. ¡Gracias por tu paciencia!")} className="bg-white border-2 border-slate-200 text-slate-700 rounded-full px-8 py-3 font-bold hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center gap-2">
-            🖨️ Imprimir Factura
+            <Icon name="printer" className="h-4 w-4 text-slate-500" />
+            <span>Imprimir Factura</span>
           </Button>
           <Button onClick={handleFinish} className="bg-[#1a1200] text-[#fff8df] rounded-full px-8 py-3 font-bold hover:opacity-90 transition-all">
             Seguir comprando
@@ -373,11 +388,15 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
                   : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <span className="text-2xl">{method.icon}</span>
+            <span className="flex items-center gap-2">
+              <Icon name={method.icon} className="h-5 w-5 text-[#c8960c]" />
               <span className="text-sm font-bold text-slate-800">{method.label}</span>
-              {paymentData.method === method.value && (
-                <span className="ml-auto w-5 h-5 bg-[#c8960c] rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">✓</span>
-              )}
+            </span>
+            {paymentData.method === method.value && (
+              <span className="ml-auto w-5 h-5 bg-[#c8960c] rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <Icon name="check" className="h-3 w-3 text-white" strokeWidth={3} />
+              </span>
+            )}
             </button>
           ))}
         </div>
@@ -397,7 +416,10 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
 
         {paymentData.method === 'transfer' && (
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800 animate-fade-in">
-            <p className="font-bold mb-2">🏦 Datos para transferencia</p>
+            <p className="font-bold mb-2 flex items-center gap-1.5">
+              <Icon name="bank" className="h-4 w-4" />
+              <span>Datos para transferencia</span>
+            </p>
             <p><b>Banco:</b> Banco Mercantil Santa Cruz</p>
             <p><b>Cuenta:</b> 1234567890</p>
             <p><b>Titular:</b> ShopyMarket SRL</p>
@@ -407,7 +429,10 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
 
         {paymentData.method === 'qr' && (
           <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 text-center animate-fade-in">
-            <p className="text-sm font-bold text-purple-800 mb-3">📱 Escanea el QR con tu app bancaria</p>
+            <p className="text-sm font-bold text-purple-800 mb-3 flex items-center justify-center gap-1.5">
+              <Icon name="phone" className="h-4 w-4" />
+              <span>Escanea el QR con tu app bancaria</span>
+            </p>
             <div className="w-40 h-40 mx-auto flex items-center justify-center overflow-hidden rounded-xl border border-purple-300 bg-white shadow-sm p-2">
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PagoShopyMarket_Bs${Number(finalCalculatedTotal).toFixed(2)}`} 
@@ -421,8 +446,9 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 text-sm animate-fade-in">
-          ⚠️ {error}
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 text-sm animate-fade-in flex items-center gap-2">
+          <Icon name="alert" className="h-5 w-5 text-red-600 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -457,7 +483,12 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
               'bg-[#1a1200] text-[#fff8df] hover:opacity-90 shadow-xl shadow-[#1a1200]/20'
             }`}
           >
-            {placing ? '⏳ Procesando...' : '🔒 Confirmar y Pagar'}
+            {placing ? 'Procesando...' : (
+              <span className="flex items-center justify-center gap-1.5">
+                <Icon name="lock" className="h-4 w-4" />
+                <span>Confirmar y Pagar</span>
+              </span>
+            )}
           </Button>
         </div>
         <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">Transacción 100% segura y encriptada</p>

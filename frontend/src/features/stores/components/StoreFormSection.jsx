@@ -3,25 +3,27 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { getProfileImageUrl } from '@/utils/userCapabilities';
+import Icon from '@/components/ui/Icon';
+import LeafletMap from '@/components/ui/LeafletMap';
 
 const COMMERCE_TYPES = [
     {
         value: 'products',
-        icon: '🛍️',
+        icon: 'market',
         title: 'Tienda de Productos',
         description: 'Vende artículos físicos o digitales: ropa, tecnología, alimentos y más.',
         color: '#f5d367',
     },
     {
         value: 'services',
-        icon: '🔧',
+        icon: 'wrench',
         title: 'Perfil de Servicios',
         description: 'Ofrece servicios profesionales: reparaciones, consultoría, instalaciones, etc.',
         color: '#60a5fa',
     },
     {
         value: 'both',
-        icon: '🏪',
+        icon: 'store',
         title: 'Tienda + Servicios',
         description: 'Lo mejor de ambos mundos: vende productos Y ofrece servicios profesionales.',
         color: '#a78bfa',
@@ -70,8 +72,8 @@ function StorePreviewCard({ storeForm, logoPreview, bannerPreview }) {
                         onError={(e) => { e.target.style.display = 'none'; }}
                     />
                 ) : (
-                    <div className="h-14 w-14 rounded-xl bg-white/10 flex items-center justify-center text-xl shrink-0">
-                        🏪
+                    <div className="h-14 w-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                        <Icon name="store" className="h-6 w-6 text-white/40" />
                     </div>
                 )}
                 <div className="min-w-0">
@@ -122,8 +124,8 @@ function ServicePreviewCard({ profileForm, logoPreview, bannerPreview }) {
                         onError={(e) => { e.target.style.display = 'none'; }}
                     />
                 ) : (
-                    <div className="h-14 w-14 rounded-xl bg-white/10 flex items-center justify-center text-xl shrink-0">
-                        🔧
+                    <div className="h-14 w-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                        <Icon name="wrench" className="h-6 w-6 text-white/40" />
                     </div>
                 )}
                 <div className="min-w-0">
@@ -161,7 +163,9 @@ function CommerceTypeSelector({ selected, onSelect }) {
                         }`}
                         aria-pressed={isActive}
                     >
-                        <div className="text-3xl mb-3">{type.icon}</div>
+                        <div className="mb-3">
+                            <Icon name={type.icon} className="h-8 w-8 text-[#f5d367]" />
+                        </div>
                         <p className={`font-bold text-sm ${isActive ? 'text-[#f5d367]' : 'text-white'}`}>
                             {type.title}
                         </p>
@@ -214,11 +218,26 @@ export function StoreFormSection({
                     <div className="p-4 rounded-xl border border-[#f5d367]/20 bg-[#f5d367]/5 flex items-center justify-between">
                         <div>
                             <p className="text-xs text-white/40">Tipo de comercio seleccionado</p>
-                            <p className="text-sm font-bold text-white mt-0.5">
-                                {commerceType === 'products' && '🛍️ Tienda de Productos'}
-                                {commerceType === 'services' && '🔧 Perfil de Servicios'}
-                                {commerceType === 'both' && '🏪 Tienda + Servicios (Híbrido)'}
-                            </p>
+                            <div className="text-sm font-bold text-white mt-1">
+                                {commerceType === 'products' && (
+                                    <span className="flex items-center gap-1.5">
+                                        <Icon name="market" className="h-4 w-4 text-[#f5d367]" />
+                                        <span>Tienda de Productos</span>
+                                    </span>
+                                )}
+                                {commerceType === 'services' && (
+                                    <span className="flex items-center gap-1.5">
+                                        <Icon name="wrench" className="h-4 w-4 text-blue-400" />
+                                        <span>Perfil de Servicios</span>
+                                    </span>
+                                )}
+                                {commerceType === 'both' && (
+                                    <span className="flex items-center gap-1.5">
+                                        <Icon name="store" className="h-4 w-4 text-[#f5d367]" />
+                                        <span>Tienda + Servicios (Híbrido)</span>
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <span className="text-xs font-bold text-[#f5d367] uppercase tracking-wider bg-white/5 px-3 py-1 rounded-lg">
                             No modificable
@@ -285,12 +304,13 @@ export function StoreFormSection({
                                     onChange={handleStoreField('country')}
                                     options={["Bolivia"]}
                                 />
-                                <Input
-                                    label="Dirección"
-                                    name="store_address"
-                                    value={storeForm.address}
-                                    onChange={handleStoreField('address')}
-                                />
+                                <div className="col-span-1 sm:col-span-2">
+                                    <LeafletMap
+                                        value={storeForm.address}
+                                        onChange={(val) => handleStoreField('address')({ target: { value: val } })}
+                                        label="Ubicación y Dirección de la Tienda"
+                                    />
+                                </div>
                                 <Input
                                     label="Logo de la tienda"
                                     name="store_logo"
@@ -406,12 +426,13 @@ export function StoreFormSection({
                                     onChange={handleServiceField('country')}
                                     options={["Bolivia"]}
                                 />
-                                <Input
-                                    label="Dirección"
-                                    name="sp_address"
-                                    value={serviceProfileForm.address}
-                                    onChange={handleServiceField('address')}
-                                />
+                                <div className="col-span-1 sm:col-span-2">
+                                    <LeafletMap
+                                        value={serviceProfileForm.address}
+                                        onChange={(val) => handleServiceField('address')({ target: { value: val } })}
+                                        label="Ubicación y Dirección de Servicios"
+                                    />
+                                </div>
                                 <Input
                                     label="Logo o Marca Personal"
                                     name="sp_logo"

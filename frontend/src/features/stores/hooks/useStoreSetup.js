@@ -202,7 +202,7 @@ export function useStoreSetup({
     };
 
     // Save/Update Store & Profile
-    const handleSave = async (e) => {
+    const handleSave = async (e, forceServiceView = null) => {
         e.preventDefault();
         if (!commerceType) {
             setFeedbackMessage({ type: 'error', text: 'Selecciona el tipo de comercio primero.' });
@@ -213,8 +213,23 @@ export function useStoreSetup({
         setFeedbackMessage(null);
 
         try {
-            const needsStore = commerceType === 'products' || commerceType === 'both';
-            const needsService = commerceType === 'services' || commerceType === 'both';
+            let needsStore = false;
+            let needsService = false;
+
+            if (commerceType === 'both') {
+                if (forceServiceView === true) {
+                    needsService = true;
+                } else if (forceServiceView === false) {
+                    needsStore = true;
+                } else {
+                    needsStore = true;
+                    needsService = true;
+                }
+            } else {
+                needsStore = commerceType === 'products';
+                needsService = commerceType === 'services';
+            }
+
             let savedStoreId = existingStore?.id || null;
 
             if (needsStore) {

@@ -4,23 +4,27 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getAllServices,
   getAllServiceProfiles,
-  getServiceProfileRating,
-  saveServiceProfileRating,
 } from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
+import Icon from "@/components/ui/Icon";
 import { API_BASE_URL } from "@/config/appSettings";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { AUTH_ROLES } from "@/utils/authRoles";
-import { StarRatingPanel } from "@/components/RatingActions";
+import { StarRatingPanel, ProductVotePanel } from "@/components/RatingActions";
+import {
+  getStoreRating,
+  submitStoreRating,
+  getItemLikes,
+  submitItemVote,
+} from "@/utils/ratingStorage";
 
 const API_BASE = API_BASE_URL;
 
 export default function ServiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, token, role } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
 
   const [service, setService] = useState(null);
   const [provider, setProvider] = useState(null);
@@ -29,6 +33,9 @@ export default function ServiceDetailPage() {
   const [ratingStats, setRatingStats] = useState(null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingMessage, setRatingMessage] = useState(null);
+  const [serviceVoteStats, setServiceVoteStats] = useState(null);
+  const [serviceVoteLoading, setServiceVoteLoading] = useState(false);
+  const [serviceVoteMessage, setServiceVoteMessage] = useState(null);
 
   useEffect(() => {
     async function fetchService() {
@@ -38,7 +45,23 @@ export default function ServiceDetailPage() {
           getAllServices(null),
           getAllServiceProfiles(null)
         ]);
-        const servicesList = Array.isArray(servicesRes) ? servicesRes : servicesRes.data; if (servicesList) { const found = servicesList.find(s => Number(s.id) === Number(id)); if (found) { setService(found); const profilesList = Array.isArray(profilesRes) ? profilesRes : profilesRes.data; if (profilesList) { const p = profilesList.find(pr => Number(pr.id) === Number(found.service_profile_id)); if (p) { setProvider(p); const rating = await getServiceProfileRating(token, p.id).catch(() => null); setRatingStats(rating); } }
+        const servicesList = Array.isArray(servicesRes) ? servicesRes : servicesRes.data;
+        if (servicesList) {
+          const found = servicesList.find(s => Number(s.id) === Number(id));
+          if (found) {
+            setService(found);
+            const likesData = getItemLikes(found.id, "service");
+            setServiceVoteStats(likesData);
+
+            const profilesList = Array.isArray(profilesRes) ? profilesRes : profilesRes.data;
+            if (profilesList) {
+              const p = profilesList.find(pr => Number(pr.id) === Number(found.service_profile_id));
+              if (p) {
+                setProvider(p);
+                const rating = getStoreRating(p.id, true);
+                setRatingStats(rating);
+              }
+            }
           } else {
             setError("Servicio no encontrado.");
           }
@@ -50,7 +73,18 @@ export default function ServiceDetailPage() {
       }
     }
     if (id) fetchService();
-  }, [id, token]);
+  }, [id]);
+
+  const isOwner = isAuthenticated && user && provider && Number(provider.admin_user_id) === Number(user.id);
+
+  useEffect(() => {
+    if (isOwner && service) {
+      navigate("/dashboard/vendor", {
+        replace: true,
+        state: { activeTab: "services", editServiceId: service.id }
+      });
+    }
+  }, [isOwner, service, navigate]);
 
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingStep, setBookingStep] = useState(1); // 1: form, 2: processing, 3: success
@@ -73,22 +107,43 @@ export default function ServiceDetailPage() {
       return;
     }
 
-    if (role !== AUTH_ROLES.CUSTOMER) {
-      setRatingMessage({ type: "error", text: "Solo los usuarios pueden calificar." });
-      return;
-    }
-
     setRatingLoading(true);
     setRatingMessage(null);
 
     try {
-      const result = await saveServiceProfileRating(token, provider.id, rating);
-      setRatingStats(result.stats);
-      setRatingMessage({ type: "success", text: "Calificación guardada." });
+      const userId = user?.id || user?.email || "logged_in_user";
+      const result = submitStoreRating(provider.id, true, userId, rating);
+      if (result) {
+        setRatingStats(result);
+        setRatingMessage({ type: "success", text: "Calificación guardada." });
+      }
     } catch (err) {
       setRatingMessage({ type: "error", text: err?.message || "No se pudo guardar la calificación." });
     } finally {
       setRatingLoading(false);
+    }
+  };
+
+  const handleServiceVote = async (vote) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    setServiceVoteLoading(true);
+    setServiceVoteMessage(null);
+
+    try {
+      const userId = user?.id || user?.email || "logged_in_user";
+      const newStats = submitItemVote(service.id, "service", userId, vote === 1 ? "like" : "dislike");
+      if (newStats) {
+        setServiceVoteStats(newStats);
+        setServiceVoteMessage({ type: "success", text: "Voto guardado." });
+      }
+    } catch (err) {
+      setServiceVoteMessage({ type: "error", text: err?.message || "No se pudo guardar el voto." });
+    } finally {
+      setServiceVoteLoading(false);
     }
   };
 
@@ -111,7 +166,7 @@ export default function ServiceDetailPage() {
 
       if (response.ok && result.success) {
         setBookingStep(3);
-        } else {
+      } else {
         throw new Error(result.message || result.error || "Error al realizar la reserva");
       }
     } catch (err) {
@@ -126,7 +181,7 @@ export default function ServiceDetailPage() {
       <div className="min-h-screen bg-[#040912] text-white">
         <Navbar />
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-none animate-spin"></div>
         </div>
       </div>
     );
@@ -137,11 +192,11 @@ export default function ServiceDetailPage() {
       <div className="min-h-screen bg-[#040912] text-white">
         <Navbar />
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="text-center p-8 bg-white/5 border border-white/10 rounded-lg shadow-xl max-w-md w-full">
-            <span className="text-6xl mb-4 block">🔧</span>
+          <div className="text-center p-8 bg-white/5 border border-white/10 rounded-none shadow-xl max-w-md w-full flex flex-col items-center">
+            <Icon name="wrench" className="h-16 w-16 text-white/40 mb-4" />
             <h2 className="text-2xl font-bold text-white">Servicio no encontrado</h2>
             <p className="text-white/50 mt-2">{error}</p>
-            <Button onClick={() => navigate(-1)} className="mt-6 bg-blue-500 text-white rounded-full">
+            <Button onClick={() => navigate(-1)} className="mt-6 bg-blue-500 text-white rounded-none">
               Volver Atrás
             </Button>
           </div>
@@ -151,7 +206,7 @@ export default function ServiceDetailPage() {
   }
 
   const imageUrl = service.image_url ? (service.image_url.startsWith("http") ? service.image_url : `${API_BASE}${service.image_url}`) : null;
-  const canRate = isAuthenticated && role === AUTH_ROLES.CUSTOMER;
+  const canRate = isAuthenticated && !isOwner;
 
   return (
     <div className="min-h-screen bg-[#040912] flex flex-col font-sans text-white">
@@ -159,30 +214,30 @@ export default function ServiceDetailPage() {
       
       <main className="flex-1 flex flex-col md:flex-row w-full max-w-7xl mx-auto md:py-10">
         {/* Izquierda: Portafolio */}
-        <div className="relative w-full md:w-1/2 bg-[#07111f] md:rounded-l-lg p-6 md:p-12 flex flex-col items-center justify-center min-h-[400px] border border-white/5">
+        <div className="relative w-full md:w-1/2 bg-[#07111f] md:rounded-none p-6 md:p-12 flex flex-col items-center justify-center min-h-[400px] border border-white/5">
           {provider && (
             <button
               onClick={() => navigate(`/service/${encodeURIComponent(provider.name)}`)}
-              className="absolute top-6 left-6 text-sm font-bold text-white/50 hover:text-white transition-colors flex items-center gap-2 z-10 bg-[#040912]/80 px-3 py-1.5 rounded-md shadow-sm border border-white/10 backdrop-blur-sm"
+              className="absolute top-6 left-6 text-sm font-bold text-white/50 hover:text-white transition-colors flex items-center gap-2 z-10 bg-[#040912]/80 px-3 py-1.5 rounded-none shadow-sm border border-white/10 backdrop-blur-sm"
             >
               ← Ir al perfil
             </button>
           )}
           {imageUrl ? (
-            <img src={imageUrl} alt={service.name} className="w-full h-80 md:h-full max-h-[600px] object-cover rounded-md shadow-2xl border border-white/10" />
+            <img src={imageUrl} alt={service.name} className="w-full h-80 md:h-full max-h-[600px] object-cover rounded-none shadow-2xl border border-white/10" />
           ) : (
-            <div className="w-full h-80 md:h-full max-h-[600px] flex flex-col items-center justify-center bg-blue-500/10 rounded-md border border-blue-500/20">
-              <span className="text-8xl opacity-50 block">🔧</span>
-              <span className="text-xl text-blue-400 mt-6 opacity-70">Servicio sin imagen</span>
+            <div className="w-full h-80 md:h-full max-h-[600px] flex flex-col items-center justify-center bg-blue-500/10 rounded-none border border-blue-500/20 p-8">
+              <Icon name="wrench" className="h-20 w-20 text-blue-500/50" />
+              <span className="text-lg text-blue-400 mt-6 opacity-70 font-semibold">Servicio sin imagen</span>
             </div>
           )}
         </div>
 
         {/* Derecha: Reserva/Alcance */}
-        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-[#07111f]/50 md:rounded-r-lg border-y border-r border-white/5">
+        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-[#07111f]/50 md:rounded-none border-y border-r border-white/5">
           <div className="space-y-8 flex-1">
             <div className="space-y-4">
-              <span className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-[0.65rem] font-bold uppercase tracking-widest border border-blue-500/20 rounded-full">
+              <span className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-[0.65rem] font-bold uppercase tracking-widest border border-blue-500/20 rounded-none">
                 Servicio Profesional
               </span>
               <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
@@ -200,27 +255,50 @@ export default function ServiceDetailPage() {
               </p>
               {service.estimated_time && (
                 <p className="text-sm font-semibold text-white/50 mt-3 flex items-center gap-2">
-                  <span className="text-blue-400 text-lg">⏱</span> Tiempo estimado: <span className="text-white/80">{service.estimated_time}</span>
+                  <Icon name="clock" className="h-4 w-4 text-blue-400 shrink-0" /> Tiempo estimado: <span className="text-white/80">{service.estimated_time}</span>
                 </p>
               )}
             </div>
 
-            <StarRatingPanel
-              stats={ratingStats || provider}
-              canInteract={canRate}
-              onRate={handleRate}
-              loading={ratingLoading}
-              message={ratingMessage}
-            />
+            <div className="space-y-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-white/40">Calificación del Prestador</p>
+              <StarRatingPanel
+                stats={ratingStats || provider}
+                userId={user?.id || user?.email}
+                canInteract={canRate}
+                onRate={handleRate}
+                loading={ratingLoading}
+                message={ratingMessage}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-white/40">Opiniones del Servicio</p>
+              <ProductVotePanel
+                likes={serviceVoteStats?.likes || 0}
+                dislikes={serviceVoteStats?.dislikes || 0}
+                userVote={user?.id || user?.email ? serviceVoteStats?.userVotes?.[user?.id || user?.email] || 0 : 0}
+                canInteract={isAuthenticated && !isOwner}
+                onVote={handleServiceVote}
+                loading={serviceVoteLoading}
+                message={serviceVoteMessage}
+              />
+            </div>
             
             <div className="space-y-6">
-              <Button onClick={handleAction} className="w-full bg-blue-500 text-white font-bold py-4 rounded-full hover:bg-blue-600 shadow-xl shadow-blue-500/20 transition-all text-lg uppercase tracking-wider">
+              <Button onClick={handleAction} className="w-full bg-blue-500 text-white font-bold py-4 rounded-none hover:bg-blue-600 shadow-xl shadow-blue-500/20 transition-all text-lg uppercase tracking-wider">
                 Solicitar Reserva
               </Button>
 
               <div className="grid grid-cols-2 gap-4 text-sm text-white/50 pt-4">
-                <div className="flex items-center gap-3 bg-white/5 p-4 rounded-md border border-white/5"><span className="text-2xl">📅</span> <span>Agenda flexible</span></div>
-                <div className="flex items-center gap-3 bg-white/5 p-4 rounded-md border border-white/5"><span className="text-2xl">💬</span> <span>Contacto directo</span></div>
+                <div className="flex items-center gap-3 bg-white/5 p-4 rounded-none border border-white/5">
+                  <Icon name="calendar" className="h-5 w-5 text-blue-400 shrink-0" />
+                  <span>Agenda flexible</span>
+                </div>
+                <div className="flex items-center gap-3 bg-white/5 p-4 rounded-none border border-white/5">
+                  <Icon name="message" className="h-5 w-5 text-blue-400 shrink-0" />
+                  <span>Contacto directo</span>
+                </div>
               </div>
             </div>
           </div>
@@ -230,7 +308,7 @@ export default function ServiceDetailPage() {
       {/* Booking Modal */}
       {showBookingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#040912]/80 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-[#0a1628] border border-white/10 rounded-lg w-full max-w-lg overflow-hidden shadow-2xl relative">
+          <div className="bg-[#0a1628] border border-white/10 rounded-none w-full max-w-lg overflow-hidden shadow-2xl relative">
             {bookingStep === 1 && (
               <div className="p-8 space-y-6">
                 <div className="flex justify-between items-start">
@@ -245,8 +323,9 @@ export default function ServiceDetailPage() {
                 
                 <div className="space-y-4">
                   {bookingError && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-md p-3 text-xs">
-                      ⚠️ {bookingError}
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-none p-3 text-xs flex items-center gap-2">
+                      <Icon name="alert" className="h-4 w-4 text-red-400 shrink-0" />
+                      <span>{bookingError}</span>
                     </div>
                   )}
                   <div>
@@ -264,7 +343,9 @@ export default function ServiceDetailPage() {
 
                     <div className="flex items-center gap-3 relative z-50">
                       <div className="relative flex-1">
-                        <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-white/50 text-lg z-10">📅</span>
+                        <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-white/50 z-10">
+                          <Icon name="calendar" className="h-4 w-4" />
+                        </span>
                         <DatePicker
                           selected={bookingData.date}
                           onChange={(date) => setBookingData(prev => ({ ...prev, date }))}
@@ -273,7 +354,7 @@ export default function ServiceDetailPage() {
                           endDate={bookingData.dateType === "range" ? bookingData.dateEnd : null}
                           dateFormat="dd/MM/yyyy"
                           placeholderText="Seleccionar fecha"
-                          className="w-full bg-[#040912] border border-white/10 rounded pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                          className="w-full bg-[#040912] border border-white/10 rounded-none pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
                           wrapperClassName="w-full"
                           minDate={new Date()}
                         />
@@ -283,7 +364,9 @@ export default function ServiceDetailPage() {
                         <>
                           <span className="text-white/40 font-bold text-xs">HASTA</span>
                           <div className="relative flex-1">
-                            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-white/50 text-lg z-10">📅</span>
+                            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-white/50 z-10">
+                              <Icon name="calendar" className="h-4 w-4" />
+                            </span>
                             <DatePicker
                               selected={bookingData.dateEnd}
                               onChange={(date) => setBookingData(prev => ({ ...prev, dateEnd: date }))}
@@ -293,7 +376,7 @@ export default function ServiceDetailPage() {
                               minDate={bookingData.date || new Date()}
                               dateFormat="dd/MM/yyyy"
                               placeholderText="Fecha final"
-                              className="w-full bg-[#040912] border border-white/10 rounded pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                              className="w-full bg-[#040912] border border-white/10 rounded-none pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
                               wrapperClassName="w-full"
                             />
                           </div>
@@ -304,12 +387,14 @@ export default function ServiceDetailPage() {
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Horario de preferencia</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-white/50 text-lg">⏰</span>
+                      <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-white/50">
+                        <Icon name="clock" className="h-4 w-4" />
+                      </span>
                       <input 
                         type="time" 
                         value={bookingData.time}
                         onChange={(e) => setBookingData(prev => ({ ...prev, time: e.target.value }))}
-                        className="w-full bg-[#040912] border border-white/10 rounded pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" 
+                        className="w-full bg-[#040912] border border-white/10 rounded-none pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" 
                       />
                     </div>
                   </div>
@@ -319,19 +404,19 @@ export default function ServiceDetailPage() {
                       placeholder="Ej. Requiero que vengan por la mañana, es para un evento..."
                       value={bookingData.notes}
                       onChange={(e) => setBookingData(prev => ({ ...prev, notes: e.target.value }))}
-                      className="w-full bg-[#040912] border border-white/10 rounded px-4 py-3 text-white focus:outline-none focus:border-blue-500 h-24 resize-none" 
+                      className="w-full bg-[#040912] border border-white/10 rounded-none px-4 py-3 text-white focus:outline-none focus:border-blue-500 h-24 resize-none" 
                     />
                   </div>
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t border-white/10">
-                  <Button onClick={() => setShowBookingModal(false)} className="bg-transparent text-white/70 hover:bg-white/5 border border-white/10 flex-1 rounded-full">
+                  <Button onClick={() => setShowBookingModal(false)} className="bg-transparent text-white/70 hover:bg-white/5 border border-white/10 flex-1 rounded-none">
                     Cancelar
                   </Button>
                   <Button 
                     onClick={handleConfirmBooking} 
                     disabled={!bookingData.date || !bookingData.time}
-                    className="bg-blue-600 text-white font-bold flex-1 rounded-full hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-600 text-white font-bold flex-1 rounded-none hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Confirmar Reserva
                   </Button>
@@ -341,14 +426,16 @@ export default function ServiceDetailPage() {
 
             {bookingStep === 2 && (
               <div className="p-16 text-center space-y-6">
-                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-none animate-spin mx-auto"></div>
                 <p className="text-lg text-white animate-pulse">Procesando solicitud...</p>
               </div>
             )}
 
             {bookingStep === 3 && (
-              <div className="p-12 text-center space-y-6 animate-fade-in">
-                <div className="w-24 h-24 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto text-5xl">✓</div>
+              <div className="p-12 text-center space-y-6 animate-fade-in flex flex-col items-center">
+                <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-none flex items-center justify-center mx-auto">
+                  <Icon name="check" className="h-10 w-10 text-green-400" strokeWidth={3} />
+                </div>
                 <div>
                   <h3 className="text-3xl font-extrabold text-white">¡Reserva solicitada!</h3>
                   <p className="text-white/60 mt-3 max-w-sm mx-auto">
@@ -362,7 +449,7 @@ export default function ServiceDetailPage() {
                     El prestador del servicio te contactará muy pronto para afinar los detalles y el pago.
                   </p>
                 </div>
-                <Button onClick={() => setShowBookingModal(false)} className="bg-white text-[#040912] font-bold px-8 py-3 rounded-full mt-6 hover:bg-white/90">
+                <Button onClick={() => setShowBookingModal(false)} className="bg-white text-[#040912] font-bold px-8 py-3 rounded-none mt-6 hover:bg-white/90">
                   Entendido
                 </Button>
               </div>
@@ -373,5 +460,3 @@ export default function ServiceDetailPage() {
     </div>
   );
 }
-
-

@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
-import BrandMark from "@/components/ui/BrandMark";
 import Button from "@/components/ui/Button";
-import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
+import Navbar from "@/components/layout/Navbar";
+import { getDisplayName } from "@/utils/userCapabilities";
 import { getRoleLabel } from "@/utils/authRoles";
 
 function getInitials(user) {
@@ -54,62 +54,7 @@ export default function VendorDashboard() {
       data-mode={theme.mode}
       className={`min-h-screen theme-transition overflow-hidden ${theme.mainClass}`}
     >
-      <header className={`sticky top-0 z-30 px-6 py-3.5 ${theme.headerClass}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <BrandMark mode={theme.mode} tone="light" />
-            <div className="hidden h-5 w-px bg-white/10 sm:block" />
-            <div className="hidden sm:block">
-              <p className="text-xs font-semibold opacity-85 text-white/80">{roleLabel}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 text-white">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => navigate("/dashboard/vendor-panel")}
-              className="rounded-[0.85rem] px-4 py-2 text-sm"
-            >
-              Administrar recursos
-            </Button>
-            <div
-              onClick={() => navigate("/profile")}
-              className="hidden flex-col items-end sm:flex cursor-pointer group select-none"
-            >
-              <p className="text-sm font-medium group-hover:text-[#f5d367] transition-colors">
-                {user ? [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || getDisplayName(user) : getDisplayName(user)}
-              </p>
-              <p className="text-[0.7rem] opacity-60 text-white/50">{user?.email}</p>
-            </div>
-            <div
-              onClick={() => navigate("/profile")}
-              className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-bold overflow-hidden shrink-0 cursor-pointer hover:border-white/20 transition-colors ${theme.accentText}`}
-            >
-              {user?.profile_image_url ? (
-                <img
-                  src={getProfileImageUrl(user.profile_image_url)}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "";
-                  }}
-                />
-              ) : (
-                getInitials(user)
-              )}
-            </div>
-            <Button
-              type="button"
-              onClick={logout}
-              className={`rounded-[0.85rem] px-4 py-2 text-sm ${theme.buttonClass}`}
-            >
-              Salir
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className={`mb-8 p-6 sm:p-8 ${theme.cardClass}`}>

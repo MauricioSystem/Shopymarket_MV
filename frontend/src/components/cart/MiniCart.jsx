@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import Button from '../ui/Button';
 import { API_BASE_URL } from "@/config/appSettings";
+import Icon from '../ui/Icon';
 
 export default function MiniCart() {
   const { isCartOpen, closeCart, cartItems, cartTotal, updateQuantity, removeFromCart, loadingCart } = useCart();
@@ -41,7 +42,7 @@ export default function MiniCart() {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {cartItems.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
-              <span className="text-6xl">🛒</span>
+              <Icon name="cart" className="h-16 w-16 text-[#c8960c]" />
               <p className="text-sm font-medium text-slate-500">Tu carrito está vacío</p>
             </div>
           ) : (
@@ -51,7 +52,7 @@ export default function MiniCart() {
                   {item.product_image ? (
                     <img src={getImageUrl(item.product_image)} alt={item.product_name} className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-2xl opacity-20">🛍️</span>
+                    <Icon name="market" className="h-6 w-6 text-slate-300 opacity-50" />
                   )}
                 </div>
                 
@@ -59,7 +60,7 @@ export default function MiniCart() {
                   <div className="flex justify-between items-start gap-2">
                     <h3 className="font-bold text-sm text-slate-900 truncate">{item.product_name}</h3>
                     <button onClick={() => removeFromCart(item.product_id)} className="text-red-400 hover:text-red-600">
-                      <span className="text-lg">🗑️</span>
+                      <Icon name="trash" className="h-4.5 w-4.5" />
                     </button>
                   </div>
                   

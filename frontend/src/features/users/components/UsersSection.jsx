@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useUsersData } from "../hooks/useUsersData";
 import { getDisplayName, filterAdminUsers } from "@/utils/userCapabilities";
 import { normalizeFrontendRole, getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
+import Icon from "../../../components/ui/Icon";
 
 function getInitialsFromName(first, last) {
   const f = first?.[0] || "";
@@ -351,7 +352,7 @@ export default function UsersSection({ token, search, roleFilter, setRoleFilter,
 
       {loadState === "error" && (
         <div className="flex flex-col items-center justify-center gap-2 py-24">
-          <p className="text-2xl">⚠️</p>
+          <Icon name="alert" className="h-8 w-8 text-red-400 mb-1" />
           <p className="text-sm text-red-400 font-semibold">{errorMsg}</p>
           <p className="text-xs opacity-40">
             Verifica que el backend esté corriendo y tu sesión sea válida.
