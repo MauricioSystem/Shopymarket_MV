@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import Icon from '@/components/ui/Icon';
-import { getStoreRating, getStoreVisits, getItemLikes } from '@/utils/ratingStorage';
+import { ratingStatsFromEntity, voteStatsFromEntity } from '@/services/marketApi';
+import { getStoreVisits } from '@/utils/ratingStorage';
 
 const getDayName = (dateStr) => {
     const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -60,11 +61,11 @@ export function BusinessMetricsSection({
     const totalLikes = useMemo(() => {
         let count = 0;
         products.forEach(p => {
-            const l = getItemLikes(p.id, "product");
+            const l = voteStatsFromEntity(p);
             count += (l?.likes || 0);
         });
         services.forEach(s => {
-            const l = getItemLikes(s.id, "service");
+            const l = voteStatsFromEntity(s);
             count += (l?.likes || 0);
         });
         return count;
@@ -74,38 +75,27 @@ export function BusinessMetricsSection({
     const popularityItems = useMemo(() => {
         const list = [];
         products.forEach(p => {
-            const l = getItemLikes(p.id, "product");
+            const l = voteStatsFromEntity(p);
             list.push({ name: p.name, likes: l?.likes || 0, type: "Producto" });
         });
         services.forEach(s => {
-            const l = getItemLikes(s.id, "service");
+            const l = voteStatsFromEntity(s);
             list.push({ name: s.name, likes: l?.likes || 0, type: "Servicio" });
         });
         // Sort descending by likes
         list.sort((a, b) => b.likes - a.likes);
         const top5 = list.slice(0, 5);
 
-        // Auto-seed mock items if there are no likes at all
-        const sumLikes = top5.reduce((sum, item) => sum + item.likes, 0);
-        if (sumLikes === 0) {
-            return [
-                { name: "Producto Destacado A (Simulado)", likes: 18, type: "Producto" },
-                { name: "Servicio Premium B (Simulado)", likes: 14, type: "Servicio" },
-                { name: "Producto Popular C (Simulado)", likes: 9, type: "Producto" },
-                { name: "Servicio Estándar D (Simulado)", likes: 5, type: "Servicio" },
-                { name: "Producto E (Simulado)", likes: 2, type: "Producto" }
-            ];
-        }
         return top5;
     }, [products, services]);
 
     // 3. Gather rating details
     const storeRating = useMemo(() => {
-        return existingStore ? getStoreRating(existingStore.id, false) : null;
+        return existingStore ? ratingStatsFromEntity(existingStore) : null;
     }, [existingStore]);
 
     const profileRating = useMemo(() => {
-        return existingServiceProfile ? getStoreRating(existingServiceProfile.id, true) : null;
+        return existingServiceProfile ? ratingStatsFromEntity(existingServiceProfile) : null;
     }, [existingServiceProfile]);
 
     const ratingSummary = useMemo(() => {
@@ -117,12 +107,9 @@ export function BusinessMetricsSection({
             if (ratingData && ratingData.count > 0) {
                 totalSum += ratingData.sum || 0;
                 totalCount += ratingData.count || 0;
-                if (ratingData.userVotes) {
-                    Object.values(ratingData.userVotes).forEach(val => {
-                        const num = Math.round(Number(val));
-                        if (starCounts[num] !== undefined) {
-                            starCounts[num]++;
-                        }
+                if (ratingData.breakdown) {
+                    Object.keys(starCounts).forEach((star) => {
+                        starCounts[star] += Number(ratingData.breakdown[star] || 0);
                     });
                 }
             }
@@ -133,17 +120,10 @@ export function BusinessMetricsSection({
 
         const average = totalCount > 0 ? parseFloat((totalSum / totalCount).toFixed(1)) : 0;
 
-        // Auto-seed ratings breakdown if empty
-        const breakdownSum = Object.values(starCounts).reduce((sum, c) => sum + c, 0);
-        let finalBreakdown = { ...starCounts };
-        if (breakdownSum === 0) {
-            finalBreakdown = { 5: 14, 4: 7, 3: 3, 2: 1, 1: 1 };
-        }
-
         return {
-            average: average || 4.7, // simulated average if no reviews
-            count: totalCount || Object.values(finalBreakdown).reduce((sum, c) => sum + c, 0),
-            breakdown: finalBreakdown
+            average,
+            count: totalCount,
+            breakdown: starCounts
         };
     }, [storeRating, profileRating]);
 

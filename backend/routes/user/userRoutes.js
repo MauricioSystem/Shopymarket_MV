@@ -21,13 +21,13 @@ router.delete('/:id', (req, res, next) => {
     const currentUserId = parseInt(req.user.id, 10);
     const userRole = req.user.role;
 
-    if (userRole === 'super_admin' || userRole === 'admin' || currentUserId === targetUserId) {
+    if (userRole === 'cliente' && currentUserId === targetUserId) {
         return next();
     }
 
     return res.status(403).json({
         success: false,
-        message: 'Insufficient privileges to delete this account'
+        message: 'Solo los usuarios clientes pueden eliminar su propia cuenta'
     });
 }, deleteUser);
 

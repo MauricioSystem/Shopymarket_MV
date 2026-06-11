@@ -10,8 +10,8 @@ const assertCustomer = (role) => {
 
 const normalizeRating = (value) => {
     const rating = Number(value);
-    if (!Number.isInteger(rating) || rating < 0 || rating > 5) {
-        throw new Error('La calificación debe ser un número entero entre 0 y 5');
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        throw new Error('La calificación debe ser un número entero entre 1 y 5');
     }
     return rating;
 };
@@ -59,33 +59,34 @@ const saveTargetRating = async ({ targetType, targetId, userId, userRole, rating
     }
 };
 
-const getProductVotes = async ({ productId, userId }) => {
+const getVotes = async ({ targetType, targetId, userId }) => {
     try {
-        if (!productId) {
-            throw new Error('El productId es obligatorio');
+        if (!targetId) {
+            throw new Error('El identificador es obligatorio');
         }
 
-        const data = await ratingModel.getProductVoteStats(productId, userId);
+        const data = await ratingModel.getVoteStats(targetType, targetId, userId);
         return { success: true, data };
     } catch (error) {
         return { success: false, error: error.message };
     }
 };
 
-const saveProductVote = async ({ productId, userId, userRole, vote }) => {
+const saveVote = async ({ targetType, targetId, userId, userRole, vote }) => {
     try {
-        if (!productId || !userId) {
-            throw new Error('El productId y el usuario son obligatorios');
+        if (!targetId || !userId) {
+            throw new Error('El identificador y el usuario son obligatorios');
         }
 
         assertCustomer(userRole);
         const normalizedVote = normalizeVote(vote);
-        const saved = await ratingModel.upsertProductVote({
-            productId,
+        const saved = await ratingModel.upsertVote({
+            targetType,
+            targetId,
             userId,
             vote: normalizedVote,
         });
-        const stats = await ratingModel.getProductVoteStats(productId, userId);
+        const stats = await ratingModel.getVoteStats(targetType, targetId, userId);
 
         return { success: true, data: { vote: saved, stats } };
     } catch (error) {
@@ -93,15 +94,15 @@ const saveProductVote = async ({ productId, userId, userRole, vote }) => {
     }
 };
 
-const deleteProductVote = async ({ productId, userId, userRole }) => {
+const deleteVote = async ({ targetType, targetId, userId, userRole }) => {
     try {
-        if (!productId || !userId) {
-            throw new Error('El productId y el usuario son obligatorios');
+        if (!targetId || !userId) {
+            throw new Error('El identificador y el usuario son obligatorios');
         }
 
         assertCustomer(userRole);
-        const deleted = await ratingModel.deleteProductVote(productId, userId);
-        const stats = await ratingModel.getProductVoteStats(productId, userId);
+        const deleted = await ratingModel.deleteVote(targetType, targetId, userId);
+        const stats = await ratingModel.getVoteStats(targetType, targetId, userId);
 
         return { success: true, data: { vote: deleted, stats } };
     } catch (error) {
@@ -112,7 +113,7 @@ const deleteProductVote = async ({ productId, userId, userRole }) => {
 module.exports = {
     getTargetRating,
     saveTargetRating,
-    getProductVotes,
-    saveProductVote,
-    deleteProductVote,
+    getVotes,
+    saveVote,
+    deleteVote,
 };

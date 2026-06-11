@@ -9,7 +9,8 @@
     "start": "node index.js",
     "prebuild": "node initializer.js",
     "build": "echo \"No backend build step defined\"",
-    "db:init": "node initializer.js"
+    "db:init": "node initializer.js",
+    "db:migrate:remove-delivery": "node migrations/removeDeliveryRole.js"
   },
   "keywords": [],
   "author": "",

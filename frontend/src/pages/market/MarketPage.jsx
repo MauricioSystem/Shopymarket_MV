@@ -12,15 +12,17 @@ import {
   getAllStores,
   getAllServiceProfiles,
   getAllCategories,
+  ratingStatsFromEntity,
+  voteStatsFromEntity,
+  saveStoreRatingStats,
+  saveServiceProfileRatingStats,
+  saveProductVoteStats,
+  deleteProductVoteStats,
+  saveServiceVoteStats,
+  deleteServiceVoteStats,
 } from "@/services/marketApi";
 import { API_BASE_URL } from "@/config/appSettings";
 import { ProductVoteButtons } from "@/components/RatingActions";
-import {
-  getStoreRating,
-  submitStoreRating,
-  getItemLikes,
-  submitItemVote,
-} from "@/utils/ratingStorage";
 
 // ── Rating/Voting Buttons for Stores ─────────────────────────────────────────
 
@@ -242,7 +244,7 @@ function ProductCard({
             <ProductVoteButtons
               likes={product.likesData?.likes || 0}
               dislikes={product.likesData?.dislikes || 0}
-              userVote={userId ? product.likesData?.userVotes?.[userId] || 0 : 0}
+              userVote={product.likesData?.userVote || (userId ? product.likesData?.userVotes?.[userId] || 0 : 0)}
               canInteract={canInteract}
               onVote={(vote) => onVote(product, vote)}
               loading={voteLoading === product.id}
@@ -315,7 +317,7 @@ function ServiceCard({
             <ProductVoteButtons
               likes={service.likesData?.likes || 0}
               dislikes={service.likesData?.dislikes || 0}
-              userVote={userId ? service.likesData?.userVotes?.[userId] || 0 : 0}
+              userVote={service.likesData?.userVote || (userId ? service.likesData?.userVotes?.[userId] || 0 : 0)}
               canInteract={canInteract}
               onVote={(vote) => onVote(service, vote)}
               loading={voteLoading === service.id}
@@ -637,31 +639,32 @@ export default function MarketPage() {
         getAllCategories(null),
       ]);
       
+      const userKey = user?.id || user?.email;
       const rawStores = Array.isArray(storesResult?.data) ? storesResult.data : [];
       const mappedStores = rawStores.map(s => ({
         ...s,
-        ratingStats: getStoreRating(s.id, false)
+        ratingStats: ratingStatsFromEntity(s, userKey)
       }));
       setStores(mappedStores);
 
       const rawProfiles = Array.isArray(profilesResult?.data) ? profilesResult.data : [];
       const mappedProfiles = rawProfiles.map(p => ({
         ...p,
-        ratingStats: getStoreRating(p.id, true)
+        ratingStats: ratingStatsFromEntity(p, userKey)
       }));
       setServiceProfiles(mappedProfiles);
 
       const rawProducts = Array.isArray(productsResult?.data) ? productsResult.data : [];
       const mappedProducts = rawProducts.map(p => ({
         ...p,
-        likesData: getItemLikes(p.id, "product")
+        likesData: voteStatsFromEntity(p, userKey)
       }));
       setProducts(mappedProducts);
 
       const rawServices = Array.isArray(servicesResult?.data) ? servicesResult.data : [];
       const mappedServices = rawServices.map(s => ({
         ...s,
-        likesData: getItemLikes(s.id, "service")
+        likesData: voteStatsFromEntity(s, userKey)
       }));
       setServices(mappedServices);
 
@@ -671,7 +674,7 @@ export default function MarketPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadMarketData();
@@ -692,19 +695,19 @@ export default function MarketPage() {
       return;
     }
     const userId = user?.id || user?.email || "logged_in_user";
-    const newStats = submitStoreRating(store.id, store.isServiceProfile, userId, score);
-    if (newStats) {
-      if (store.isServiceProfile) {
-        setServiceProfiles(current =>
-          current.map(p => Number(p.id) === Number(store.id) ? { ...p, ratingStats: newStats } : p)
-        );
-      } else {
-        setStores(current =>
-          current.map(s => Number(s.id) === Number(store.id) ? { ...s, ratingStats: newStats } : s)
-        );
-      }
+    const newStats = store.isServiceProfile
+      ? await saveServiceProfileRatingStats(store.id, score, token, userId)
+      : await saveStoreRatingStats(store.id, score, token, userId);
+    if (store.isServiceProfile) {
+      setServiceProfiles(current =>
+        current.map(p => Number(p.id) === Number(store.id) ? { ...p, ratingStats: newStats } : p)
+      );
+    } else {
+      setStores(current =>
+        current.map(s => Number(s.id) === Number(store.id) ? { ...s, ratingStats: newStats } : s)
+      );
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, token, user]);
 
   const handleProductVote = useCallback(async (product, vote) => {
     if (!isAuthenticated) {
@@ -714,18 +717,19 @@ export default function MarketPage() {
     setProductVoteLoading(product.id);
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const newStats = submitItemVote(product.id, "product", userId, vote === 1 ? "like" : "dislike");
-      if (newStats) {
-        setProducts((current) =>
-          current.map((entry) =>
-            Number(entry.id) === Number(product.id) ? { ...entry, likesData: newStats } : entry
-          )
-        );
-      }
+      const currentVote = Number(product.likesData?.userVote || product.likesData?.userVotes?.[userId] || 0);
+      const newStats = currentVote === vote
+        ? await deleteProductVoteStats(product.id, token, userId)
+        : await saveProductVoteStats(product.id, vote, token, userId);
+      setProducts((current) =>
+        current.map((entry) =>
+          Number(entry.id) === Number(product.id) ? { ...entry, ...newStats, likesData: newStats } : entry
+        )
+      );
     } finally {
       setProductVoteLoading(null);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, token, user]);
 
   const handleServiceVote = useCallback(async (service, vote) => {
     if (!isAuthenticated) {
@@ -735,18 +739,19 @@ export default function MarketPage() {
     setServiceVoteLoading(service.id);
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const newStats = submitItemVote(service.id, "service", userId, vote === 1 ? "like" : "dislike");
-      if (newStats) {
-        setServices((current) =>
-          current.map((entry) =>
-            Number(entry.id) === Number(service.id) ? { ...entry, likesData: newStats } : entry
-          )
-        );
-      }
+      const currentVote = Number(service.likesData?.userVote || service.likesData?.userVotes?.[userId] || 0);
+      const newStats = currentVote === vote
+        ? await deleteServiceVoteStats(service.id, token, userId)
+        : await saveServiceVoteStats(service.id, vote, token, userId);
+      setServices((current) =>
+        current.map((entry) =>
+          Number(entry.id) === Number(service.id) ? { ...entry, ...newStats, likesData: newStats } : entry
+        )
+      );
     } finally {
       setServiceVoteLoading(null);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, token, user]);
 
   // Clean up incompatible categories when tabs shift
   useEffect(() => {

@@ -29,6 +29,16 @@ const REACTIVATE_ENDPOINTS = parseEndpointList(
     ['/api/auth/reactivate', '/auth/reactivate', '/reactivate'],
 );
 
+const REACTIVATE_VERIFY_ENDPOINTS = parseEndpointList(
+    import.meta.env.VITE_AUTH_REACTIVATE_VERIFY_PATHS,
+    ['/api/auth/reactivate/verify', '/auth/reactivate/verify', '/reactivate/verify'],
+);
+
+const REACTIVATE_PASSWORD_ENDPOINTS = parseEndpointList(
+    import.meta.env.VITE_AUTH_REACTIVATE_PASSWORD_PATHS,
+    ['/api/auth/reactivate/password', '/auth/reactivate/password', '/reactivate/password'],
+);
+
 const LOGIN_ADMIN_ENDPOINTS = parseEndpointList(
     import.meta.env.VITE_AUTH_LOGIN_ADMIN_PATHS,
     ['/api/auth/loginAdmin', '/auth/loginAdmin', '/loginAdmin'],
@@ -45,7 +55,7 @@ const toErrorMessage = (payload, fallback) => {
         return payload;
     }
 
-    return payload.message || payload.error || payload.detail || fallback;
+    return payload.error || payload.message || payload.detail || fallback;
 };
 
 async function readResponseBody(response) {
@@ -212,7 +222,52 @@ export async function reactivateRequest(credentials) {
         body: credentials,
     });
 
-    return normalizeAuthPayload(response);
+    return response.data;
+}
+
+export async function verifyReactivationCodeRequest(payload) {
+    const response = await requestWithFallback(REACTIVATE_VERIFY_ENDPOINTS, {
+        body: payload,
+    });
+
+    return response.data;
+}
+
+export async function resetReactivationPasswordRequest(payload) {
+    let lastNetworkError = null;
+
+    for (const endpoint of REACTIVATE_PASSWORD_ENDPOINTS) {
+        try {
+            const response = await requestJson(endpoint, {
+                method: 'PUT',
+                body: payload,
+            });
+
+            if (response.ok) {
+                return response.data;
+            }
+
+            if (![404, 405].includes(response.status)) {
+                const error = new Error(toErrorMessage(response.data, 'No fue posible completar la recuperación.'));
+                error.status = response.status;
+                error.payload = response.data;
+                error.endpoint = endpoint;
+                throw error;
+            }
+        } catch (error) {
+            if (typeof error?.status === 'number' && ![404, 405].includes(error.status)) {
+                throw error;
+            }
+
+            lastNetworkError = error;
+        }
+    }
+
+    if (lastNetworkError) {
+        throw lastNetworkError;
+    }
+
+    throw new Error('No fue posible completar la recuperación.');
 }
 
 export { normalizeAuthPayload, normalizeRole };

@@ -50,15 +50,15 @@ export default function AdminDashboard() {
   }, [token]);
 
   const stats = useMemo(() => {
-    const activeUsers = users.filter(
+    const visibleUsers = users.filter(
       (u) =>
-        u.status !== "deleted" &&
         u.roles?.[0]?.name !== "super_admin" &&
         u.roles?.[0]?.name !== "administrator"
     );
-    const counts = { total: activeUsers.length, admin: 0, cliente: 0, repartidor: 0, stores: stores.length };
-    activeUsers.forEach((u) => {
+    const counts = { total: visibleUsers.length, admin: 0, cliente: 0, repartidor: 0, deleted: 0, stores: stores.length };
+    visibleUsers.forEach((u) => {
       const role = u.roles?.[0]?.name;
+      if (u.status === "deleted") counts.deleted++;
       if (role === "admin") counts.admin++;
       else if (role === "cliente") counts.cliente++;
       else if (role === "repartidor") counts.repartidor++;

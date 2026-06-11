@@ -21,7 +21,6 @@ export function getDisplayName(user) {
 export function filterAdminUsers(users) {
   if (!Array.isArray(users)) return [];
   return users.filter((u) => {
-    if (u.status === "deleted") return false;
     const primaryRole = u.roles?.[0]?.name;
     return (
       primaryRole !== "super_admin" &&

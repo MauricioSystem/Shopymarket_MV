@@ -36,6 +36,19 @@ CREATE TABLE IF NOT EXISTS user_roles (
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS account_reactivation_codes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    code_hash TEXT NOT NULL,
+    reset_token_hash TEXT,
+    expires_at TIMESTAMP NOT NULL,
+    verified_at TIMESTAMP,
+    consumed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS subscription_plans (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -172,7 +185,6 @@ CREATE TABLE IF NOT EXISTS orders (
     id BIGSERIAL PRIMARY KEY,
     customer_user_id BIGINT NOT NULL,
     store_id BIGINT,
-    delivery_user_id BIGINT,
     order_type VARCHAR(50) NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
     subtotal NUMERIC(10,2) NOT NULL,
@@ -182,8 +194,7 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_address TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_user_id) REFERENCES users(id),
-    FOREIGN KEY (store_id) REFERENCES stores(id),
-    FOREIGN KEY (delivery_user_id) REFERENCES users(id)
+    FOREIGN KEY (store_id) REFERENCES stores(id)
 );
 
 CREATE TABLE IF NOT EXISTS order_details (
@@ -259,6 +270,10 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS dislike_count INTEGER DEFAULT 0;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS vote_score INTEGER DEFAULT 0;
 
+ALTER TABLE services ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS dislike_count INTEGER DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS vote_score INTEGER DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS product_votes (
     id BIGSERIAL PRIMARY KEY,
     product_id BIGINT NOT NULL,
@@ -269,6 +284,18 @@ CREATE TABLE IF NOT EXISTS product_votes (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE (product_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS service_votes (
+    id BIGSERIAL PRIMARY KEY,
+    service_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    vote SMALLINT NOT NULL CHECK (vote IN (-1, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (service_id, user_id)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS unique_store_review_per_user

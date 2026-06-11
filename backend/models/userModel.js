@@ -147,6 +147,94 @@ const updatePasswordHash = async (userId, password_hash) => {
     return result.rows[0] || null;
 };
 
+const countBlockingOrdersByUserId = async (userId) => {
+    const query = `
+        SELECT COUNT(*)::INTEGER AS count
+        FROM orders
+        WHERE customer_user_id = $1
+          AND status NOT IN ('delivered', 'cancelled')
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows[0]?.count || 0;
+};
+
+const countStoresByUserId = async (userId) => {
+    const query = `
+        SELECT COUNT(*)::INTEGER AS count
+        FROM stores
+        WHERE admin_user_id = $1
+          AND COALESCE(status, 'active') <> 'deleted'
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows[0]?.count || 0;
+};
+
+const countServiceProfilesByUserId = async (userId) => {
+    const query = `
+        SELECT COUNT(*)::INTEGER AS count
+        FROM service_profiles
+        WHERE admin_user_id = $1
+          AND COALESCE(status, 'active') <> 'deleted'
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows[0]?.count || 0;
+};
+
+const createReactivationCode = async ({ userId, email, codeHash, expiresAt }) => {
+    await pool.query(
+        `
+        UPDATE account_reactivation_codes
+        SET consumed_at = NOW()
+        WHERE user_id = $1
+          AND consumed_at IS NULL
+        `,
+        [userId]
+    );
+
+    const query = `
+        INSERT INTO account_reactivation_codes (user_id, email, code_hash, expires_at)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, user_id, email, expires_at, created_at
+    `;
+    const result = await pool.query(query, [userId, email, codeHash, expiresAt]);
+    return result.rows[0];
+};
+
+const getLatestReactivationCodeByEmail = async (email) => {
+    const query = `
+        SELECT id, user_id, email, code_hash, reset_token_hash, expires_at, verified_at, consumed_at, created_at
+        FROM account_reactivation_codes
+        WHERE email = $1
+          AND consumed_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+    `;
+    const result = await pool.query(query, [email]);
+    return result.rows[0] || null;
+};
+
+const markReactivationCodeVerified = async (codeId, resetTokenHash) => {
+    const query = `
+        UPDATE account_reactivation_codes
+        SET verified_at = NOW(), reset_token_hash = $2
+        WHERE id = $1
+        RETURNING id, user_id, email, expires_at, verified_at
+    `;
+    const result = await pool.query(query, [codeId, resetTokenHash]);
+    return result.rows[0] || null;
+};
+
+const consumeReactivationCode = async (codeId) => {
+    const query = `
+        UPDATE account_reactivation_codes
+        SET consumed_at = NOW()
+        WHERE id = $1
+        RETURNING id
+    `;
+    const result = await pool.query(query, [codeId]);
+    return result.rows[0] || null;
+};
+
 const deleteUser = async (userId) => {
     const query = `
         UPDATE users
@@ -198,6 +286,13 @@ module.exports = {
     createUser,
     updateUser,
     updatePasswordHash,
+    countBlockingOrdersByUserId,
+    countStoresByUserId,
+    countServiceProfilesByUserId,
+    createReactivationCode,
+    getLatestReactivationCodeByEmail,
+    markReactivationCodeVerified,
+    consumeReactivationCode,
     deleteUser,
     reactivateUser,
     getUserRoles,

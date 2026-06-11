@@ -76,10 +76,11 @@ const saveServiceProfileRating = async (req, res) => {
     }
 };
 
-const getProductVotes = async (req, res) => {
+const getVotes = (targetType, paramName) => async (req, res) => {
     try {
-        const result = await ratingService.getProductVotes({
-            productId: req.params.productId,
+        const result = await ratingService.getVotes({
+            targetType,
+            targetId: req.params[paramName],
             userId: req.user?.id,
         });
 
@@ -93,10 +94,11 @@ const getProductVotes = async (req, res) => {
     }
 };
 
-const saveProductVote = async (req, res) => {
+const saveVote = (targetType, paramName) => async (req, res) => {
     try {
-        const result = await ratingService.saveProductVote({
-            productId: req.params.productId,
+        const result = await ratingService.saveVote({
+            targetType,
+            targetId: req.params[paramName],
             userId: req.user?.id,
             userRole: req.user?.role,
             vote: req.body.vote,
@@ -112,10 +114,11 @@ const saveProductVote = async (req, res) => {
     }
 };
 
-const deleteProductVote = async (req, res) => {
+const deleteVote = (targetType, paramName) => async (req, res) => {
     try {
-        const result = await ratingService.deleteProductVote({
-            productId: req.params.productId,
+        const result = await ratingService.deleteVote({
+            targetType,
+            targetId: req.params[paramName],
             userId: req.user?.id,
             userRole: req.user?.role,
         });
@@ -135,7 +138,10 @@ module.exports = {
     saveStoreRating,
     getServiceProfileRating,
     saveServiceProfileRating,
-    getProductVotes,
-    saveProductVote,
-    deleteProductVote,
+    getProductVotes: getVotes('product', 'productId'),
+    saveProductVote: saveVote('product', 'productId'),
+    deleteProductVote: deleteVote('product', 'productId'),
+    getServiceVotes: getVotes('service', 'serviceId'),
+    saveServiceVote: saveVote('service', 'serviceId'),
+    deleteServiceVote: deleteVote('service', 'serviceId'),
 };

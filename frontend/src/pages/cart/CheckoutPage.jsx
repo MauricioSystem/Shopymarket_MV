@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import { API_BASE_URL } from "@/config/appSettings";
 import { createOrder } from '../../services/orderApi';
 import Icon from '../../components/ui/Icon';
+import LeafletMap, { combineAddressCoords, parseAddressCoords } from '@/components/ui/LeafletMap';
 
 const API_BASE = API_BASE_URL;
 const getImageUrl = (url) => url ? (url.startsWith("http") ? url : `${API_BASE}${url}`) : null;
@@ -189,7 +190,8 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
 // ── Paso 3: Entrega ───────────────────────────────────────────────────────────
 function StepDelivery({ deliveryData, setDeliveryData, onNext, onBack }) {
   const isPickup = deliveryData.method === 'pickup';
-  const isValid = deliveryData.method && (isPickup || deliveryData.address);
+  const parsedAddress = parseAddressCoords(deliveryData.address);
+  const isValid = deliveryData.method && (isPickup || (parsedAddress.text.trim() && parsedAddress.hasCoords));
   return (
     <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-10 shadow-sm space-y-8">
       <div>
@@ -228,7 +230,18 @@ function StepDelivery({ deliveryData, setDeliveryData, onNext, onBack }) {
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Dirección de entrega</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <FormInput id="address" label="Dirección completa" required placeholder="Calle, número, zona/barrio" value={deliveryData.address} onChange={(e) => setDeliveryData(p => ({ ...p, address: e.target.value }))} />
+              <LeafletMap
+                value={deliveryData.address}
+                onChange={(value) => setDeliveryData(p => ({ ...p, address: value }))}
+                label="Ubicación de entrega"
+                helperText="Marca el punto exacto donde quieres recibir el pedido."
+                tone="light"
+              />
+              {deliveryData.address && !parsedAddress.hasCoords ? (
+                <p className="mt-1 text-xs font-semibold text-red-500">
+                  Marca tu ubicación exacta en el mapa para continuar.
+                </p>
+              ) : null}
             </div>
             <FormInput id="city" label="Ciudad" required placeholder="Ej: Cochabamba" value={deliveryData.city} onChange={(e) => setDeliveryData(p => ({ ...p, city: e.target.value }))} />
             <FormInput id="notes" label="Referencias / Notas" placeholder="Ej: Edificio azul, 2do piso" value={deliveryData.notes} onChange={(e) => setDeliveryData(p => ({ ...p, notes: e.target.value }))} />
@@ -297,11 +310,19 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
         setError(null);
     
     try {
+      const parsedDeliveryAddress = parseAddressCoords(deliveryData.address);
+      const deliveryAddressText = [
+        parsedDeliveryAddress.text,
+        deliveryData.city,
+        deliveryData.notes ? `Ref: ${deliveryData.notes}` : null,
+      ].filter(Boolean).join(', ');
+      const finalDeliveryAddress = deliveryData.method === 'delivery'
+        ? combineAddressCoords(deliveryAddressText, parsedDeliveryAddress.lat, parsedDeliveryAddress.lng)
+        : null;
+
       const orderPayload = {
         order_type: deliveryData.method,
-        delivery_address: deliveryData.method === 'delivery'
-          ? `${deliveryData.address}, ${deliveryData.city}${deliveryData.notes ? ` (Ref: ${deliveryData.notes})` : ''}`
-          : null,
+        delivery_address: finalDeliveryAddress,
         shipping_cost: shippingCost,
         discount: 0
       };
@@ -509,6 +530,7 @@ export default function CheckoutPage() {
   const { cartItems, cartTotal, loadingCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const userAddressText = parseAddressCoords(user?.address).text || user?.address || '';
 
   const [step, setStep] = useState(0);
 
@@ -518,7 +540,7 @@ export default function CheckoutPage() {
     phone: user?.phone || '',
     document_type: 'CI',
     document_number: '',
-    billing_address: user?.address || '',
+    billing_address: userAddressText,
   });
 
   const [deliveryData, setDeliveryData] = useState({

@@ -3,6 +3,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AuthHero from "@/components/auth/AuthHero";
 import AuthFormPanel from "@/components/auth/AuthFormPanel";
 import { useAuth } from "@/context/AuthContext";
+import { parseAddressCoords } from "@/components/ui/LeafletMap";
+import {
+  reactivateRequest,
+  resetReactivationPasswordRequest,
+  verifyReactivationCodeRequest,
+} from "@/services/authApi";
 import {
   AUTH_ROLES,
   ROLE_OPTIONS,
@@ -59,8 +65,12 @@ const validateForm = (formMode, formData) => {
     }
     if (!formData.country.trim()) errors.country = "El país es obligatorio.";
     if (!formData.city.trim()) errors.city = "La ciudad es obligatoria.";
-    if (!formData.address.trim())
+    const parsedAddress = parseAddressCoords(formData.address);
+    if (!parsedAddress.text.trim()) {
       errors.address = "La dirección es obligatoria.";
+    } else if (!parsedAddress.hasCoords) {
+      errors.address = "Marca tu ubicación exacta en el mapa.";
+    }
     if (!formData.confirmPassword) {
       errors.confirmPassword = "La confirmación de contraseña es obligatoria.";
     } else if (formData.password !== formData.confirmPassword) {
@@ -104,7 +114,6 @@ function AuthPage() {
     login,
     loginAdmin,
     register,
-    reactivate,
     isVendorMode: persistedVendorMode,
     actionContext,
     isAuthenticated,
@@ -137,6 +146,9 @@ function AuthPage() {
   const [formData, setFormData] = useState(customerFormDefaults);
   const [formErrors, setFormErrors] = useState({});
   const [formMessage, setFormMessage] = useState("");
+  const [localMessageIsError, setLocalMessageIsError] = useState(false);
+  const [reactivationStep, setReactivationStep] = useState("request");
+  const [reactivationToken, setReactivationToken] = useState("");
 
   const isRegisterMode = formMode === "register";
   const isReactivateMode = formMode === "reactivate";
@@ -148,6 +160,7 @@ function AuthPage() {
     setFormMode(getInitialFormMode());
     setFormErrors({});
     setFormMessage("");
+    setLocalMessageIsError(false);
     clearError();
     if (isAdminLoginPath(location.pathname)) {
       setAccessRole(AUTH_ROLES.ADMINISTRATOR);
@@ -166,6 +179,8 @@ function AuthPage() {
     let finalValue = type === "checkbox" ? checked : value;
     if (name === "phone") {
       finalValue = value.replace(/\D/g, "").slice(0, 8);
+    } else if (name === "code") {
+      finalValue = value.replace(/\D/g, "").slice(0, 5);
     }
 
     setFormData((current) => ({
@@ -209,18 +224,99 @@ function AuthPage() {
       routerNavigate("/login");
     }
     setFormMode(nextMode);
+    setReactivationStep("request");
+    setReactivationToken("");
     setFormErrors({});
     clearError();
     setFormMessage("");
+    setLocalMessageIsError(false);
+  };
+
+  const validateReactivateForm = () => {
+    const errors = {};
+    const emailValue = formData.email.trim().toLowerCase();
+
+    if (!emailValue) {
+      errors.email = "El correo es obligatorio.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+      errors.email = "El formato de correo no es válido.";
+    }
+
+    if (reactivationStep === "verify") {
+      if (!/^\d{5}$/.test(formData.code || "")) {
+        errors.code = "Ingresa el código de 5 números.";
+      }
+    }
+
+    if (reactivationStep === "password") {
+      if (!formData.password) {
+        errors.password = "La contraseña es obligatoria.";
+      } else if (formData.password.length < 6) {
+        errors.password = "La contraseña debe tener al menos 6 caracteres.";
+      }
+
+      if (!formData.confirmPassword) {
+        errors.confirmPassword = "Confirma tu nueva contraseña.";
+      } else if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = "Las contraseñas no coinciden.";
+      }
+    }
+
+    return errors;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const validationErrors = validateForm(formMode, formData);
+    const validationErrors = isReactivateMode
+      ? validateReactivateForm()
+      : validateForm(formMode, formData);
     setFormErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    if (isReactivateMode) {
+      try {
+        if (reactivationStep === "request") {
+          await reactivateRequest({ email: formData.email.trim().toLowerCase() });
+          setReactivationStep("verify");
+          setFormMessage("Te enviamos un código de 5 números. Tienes 5 minutos para ingresarlo.");
+          setLocalMessageIsError(false);
+          return;
+        }
+
+        if (reactivationStep === "verify") {
+          const response = await verifyReactivationCodeRequest({
+            email: formData.email.trim().toLowerCase(),
+            code: formData.code,
+          });
+          setReactivationToken(response?.data?.reset_token || response?.reset_token || "");
+          setReactivationStep("password");
+          setFormMessage("Código verificado. Ahora crea una nueva contraseña.");
+          setLocalMessageIsError(false);
+          return;
+        }
+
+        await resetReactivationPasswordRequest({
+          email: formData.email.trim().toLowerCase(),
+          reset_token: reactivationToken,
+          password: formData.password,
+        });
+        setFormMessage("Cuenta recuperada correctamente. Ya puedes iniciar sesión con tu nueva contraseña.");
+        setFormData(customerFormDefaults);
+        setReactivationToken("");
+        setReactivationStep("request");
+        setLocalMessageIsError(false);
+        setTimeout(() => {
+          routerNavigate("/login");
+          setFormMode("login");
+        }, 1200);
+      } catch (requestError) {
+        setFormMessage(requestError?.message || "No fue posible completar la recuperación.");
+        setLocalMessageIsError(true);
+      }
       return;
     }
 
@@ -239,13 +335,6 @@ function AuthPage() {
             },
             { isVendorMode, entryPoint: "register", role: accessRole, roleId },
           )
-        : isReactivateMode
-        ? await reactivate(payload, {
-            isVendorMode,
-            entryPoint: "reactivate",
-            role: accessRole,
-            roleId,
-          })
         : isAdminLoginRoute
         ? await loginAdmin(payload, {
             isVendorMode: true,
@@ -327,8 +416,9 @@ function AuthPage() {
               formData={formData}
               formErrors={formErrors}
               formMessage={formMessage}
-              formMessageIsError={!!error}
+              formMessageIsError={!!error || localMessageIsError}
               loading={loading}
+              reactivationStep={reactivationStep}
               onFieldChange={handleFieldChange}
               onToggleMode={handleIntentChange}
               onToggleVendorMode={() => handleModeChange(!isVendorMode)}

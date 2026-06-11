@@ -17,6 +17,6 @@ router.get('/my-orders', authorize('cliente'), getMyOrders);
 router.get('/store/:storeId', authorize('admin', 'super_admin'), getStoreOrders);
 router.get('/all', authorize('super_admin'), getAllOrders);
 router.get('/:id', getOrderById);
-router.put('/:id/status', authorize('admin', 'super_admin', 'repartidor'), updateStatus);
+router.put('/:id/status', authorize('admin', 'super_admin'), updateStatus);
 
 module.exports = router;

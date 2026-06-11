@@ -60,7 +60,8 @@ export default function LeafletMap({
   onChange,
   readOnly = false,
   label = "Ubicación en el mapa",
-  helperText = "Haz clic en el mapa o arrastra el marcador para fijar la ubicación exacta"
+  helperText = "Haz clic en el mapa o arrastra el marcador para fijar la ubicación exacta",
+  tone = "dark"
 }) {
   const [geoError, setGeoError] = useState(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -69,6 +70,14 @@ export default function LeafletMap({
   const [addressText, setAddressText] = useState(parsed.text);
   const [lat, setLat] = useState(parsed.lat);
   const [lng, setLng] = useState(parsed.lng);
+  const isLightTone = tone === "light";
+  const labelClass = isLightTone ? "text-slate-600" : "text-[#a1a1aa]";
+  const helperClass = isLightTone ? "text-slate-500" : "text-white/40";
+  const fieldLabelClass = isLightTone ? "text-slate-500" : "text-white/50";
+  const inputClass = isLightTone
+    ? "w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-none p-3 text-sm focus:outline-none focus:border-[#c8960c] placeholder-slate-400"
+    : "w-full bg-[#040912] border border-white/10 text-white rounded-none p-3 text-sm focus:outline-none focus:border-[#f5d367] placeholder-white/20";
+  const mapBorderClass = isLightTone ? "border-slate-200" : "border-white/10";
 
   // Sync internal state when prop value changes from outside
   useEffect(() => {
@@ -124,7 +133,8 @@ export default function LeafletMap({
     const text = e.target.value;
     setAddressText(text);
     if (onChange) {
-      onChange(combineAddressCoords(text, lat, lng));
+      const currentParsed = parseAddressCoords(value);
+      onChange(currentParsed.hasCoords ? combineAddressCoords(text, lat, lng) : text);
     }
   };
 
@@ -151,11 +161,11 @@ export default function LeafletMap({
       {!readOnly && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <span className="block text-xs font-semibold uppercase tracking-[0.22em] text-[#a1a1aa]">
+            <span className={`block text-xs font-semibold uppercase tracking-[0.22em] ${labelClass}`}>
               {label}
             </span>
             {helperText && (
-              <span className="text-[0.7rem] text-white/40 block mt-0.5">
+              <span className={`text-[0.7rem] block mt-0.5 ${helperClass}`}>
                 {helperText}
               </span>
             )}
@@ -182,20 +192,20 @@ export default function LeafletMap({
       {/* Address text input for edit mode */}
       {!readOnly && (
         <div className="space-y-1">
-          <label className="block text-xs text-white/50 font-medium">Dirección física descriptiva</label>
+          <label className={`block text-xs font-medium ${fieldLabelClass}`}>Dirección física descriptiva</label>
           <input
             type="text"
             value={addressText}
             onChange={handleTextChange}
             placeholder="Ej. Av. Beni #1840, Equipetrol"
-            className="w-full bg-[#040912] border border-white/10 text-white rounded-none p-3 text-sm focus:outline-none focus:border-[#f5d367] placeholder-white/20"
+            className={inputClass}
           />
         </div>
       )}
 
       {/* React Leaflet Map Container */}
       <div 
-        className="w-full h-64 border border-white/10 rounded-none overflow-hidden relative shadow-inner" 
+        className={`w-full h-64 border rounded-none overflow-hidden relative shadow-inner ${mapBorderClass}`} 
         style={{ minHeight: "260px", zIndex: 1 }}
       >
         <MapContainer

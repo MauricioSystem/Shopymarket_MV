@@ -14,20 +14,16 @@ const FRONTEND_TO_BACKEND_ROLE = {
     customer: 'cliente',
     cliente: 'cliente',
     client: 'cliente',
-    buyer: 'cliente',
-    delivery: 'repartidor',
-    repartidor: 'repartidor',
-    courier: 'repartidor',
+    buyer: 'cliente'
 };
 
 const ROLE_ID_TO_BACKEND = {
     1: 'super_admin',
     2: 'admin',
-    3: 'cliente',
-    4: 'repartidor',
+    3: 'cliente'
 };
 
-const PUBLIC_LOGIN_ROLES = ['cliente', 'admin', 'repartidor'];
+const PUBLIC_LOGIN_ROLES = ['cliente', 'admin'];
 
 const normalizeBackendRole = (value) => {
     if (value === undefined || value === null || value === '') {
@@ -163,7 +159,7 @@ const login = async (req, res) => {
         if (!expectedRole || !PUBLIC_LOGIN_ROLES.includes(expectedRole)) {
             return res.status(400).json({
                 success: false,
-                message: 'Debes indicar un rol válido para iniciar sesión: cliente, vendedor o delivery.',
+                message: 'Debes indicar un rol válido para iniciar sesión: cliente o vendedor.',
             });
         }
 
@@ -177,8 +173,7 @@ const login = async (req, res) => {
         if (!userHasRole(roles, expectedRole)) {
             const roleLabels = {
                 cliente: 'cliente',
-                admin: 'vendedor',
-                repartidor: 'delivery',
+                admin: 'vendedor'
             };
             return res.status(403).json({
                 success: false,

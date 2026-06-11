@@ -5,20 +5,23 @@ import { useCart } from "@/context/CartContext";
 import {
   getAllProducts,
   getAllStores,
+  getProductVoteStats,
+  saveProductVoteStats,
+  deleteProductVoteStats,
+  voteStatsFromEntity,
 } from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import { API_BASE_URL } from "@/config/appSettings";
 import { ProductVotePanel } from "@/components/RatingActions";
-import { getItemLikes, submitItemVote } from "@/utils/ratingStorage";
 
 const API_BASE = API_BASE_URL;
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const { addToCart, openCart } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -45,7 +48,10 @@ export default function ProductDetailPage() {
         if (productsList) {
           const found = productsList.find(p => Number(p.id) === Number(id));
           if (found) {
-            const likesData = getItemLikes(found.id, "product");
+            const userId = user?.id || user?.email;
+            const likesData = userId
+              ? await getProductVoteStats(found.id, token, userId)
+              : voteStatsFromEntity(found);
             setProduct(found);
             setVoteStats(likesData);
             const storesList = Array.isArray(storesRes) ? storesRes : storesRes.data;
@@ -64,7 +70,7 @@ export default function ProductDetailPage() {
       }
     }
     if (id) fetchProduct();
-  }, [id]);
+  }, [id, token, user]);
 
   const isOwner = isAuthenticated && user && store && Number(store.admin_user_id) === Number(user.id);
 
@@ -112,11 +118,13 @@ export default function ProductDetailPage() {
 
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const newStats = submitItemVote(product.id, "product", userId, vote === 1 ? "like" : "dislike");
-      if (newStats) {
-        setVoteStats(newStats);
-        setVoteMessage({ type: "success", text: "Voto guardado." });
-      }
+      const currentVote = Number(voteStats?.userVote || voteStats?.userVotes?.[userId] || 0);
+      const newStats = currentVote === vote
+        ? await deleteProductVoteStats(product.id, token, userId)
+        : await saveProductVoteStats(product.id, vote, token, userId);
+      setVoteStats(newStats);
+      setProduct((current) => current ? { ...current, ...newStats } : current);
+      setVoteMessage({ type: "success", text: "Voto guardado." });
     } catch (err) {
       setVoteMessage({ type: "error", text: err?.message || "No se pudo guardar el voto." });
     } finally {
@@ -205,7 +213,7 @@ export default function ProductDetailPage() {
             <ProductVotePanel
               likes={voteStats?.likes || 0}
               dislikes={voteStats?.dislikes || 0}
-              userVote={user?.id || user?.email ? voteStats?.userVotes?.[user?.id || user?.email] || 0 : 0}
+              userVote={voteStats?.userVote || (user?.id || user?.email ? voteStats?.userVotes?.[user?.id || user?.email] || 0 : 0)}
               canInteract={canVote}
               onVote={handleVote}
               loading={voteLoading}

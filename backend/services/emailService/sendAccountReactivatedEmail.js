@@ -6,10 +6,6 @@ const SENDER = {
     name: process.env.BREVO_SENDER_NAME,
 };
 
-/**
- * Envía email de confirmación de reactivación de cuenta.
- * @param {Object} user - Datos del usuario reactivado
- */
 const sendAccountReactivatedEmail = async (user) => {
     try {
         const client = getClient();
@@ -17,13 +13,13 @@ const sendAccountReactivatedEmail = async (user) => {
         await client.transactionalEmails.sendTransacEmail({
             sender: SENDER,
             to: [{ email: user.email, name: `${user.first_name} ${user.last_name || ''}`.trim() }],
-            subject: '¡Tu cuenta de ShopyMarket ha sido reactivada! ✅',
+            subject: 'Tu cuenta de ShopyMarket ha sido reactivada',
             htmlContent: accountReactivatedTemplate(user),
         });
 
-        console.log(`[Brevo Email] ✅ Reactivación enviada a: ${user.email}`);
+        console.log(`[Brevo Email] Reactivacion enviada a: ${user.email}`);
     } catch (error) {
-        console.error('[Brevo Email] ❌ Error al enviar reactivación:', JSON.stringify(error.body || error.message));
+        console.error('[Brevo Email] Error al enviar reactivacion:', error.message || error);
     }
 };
 

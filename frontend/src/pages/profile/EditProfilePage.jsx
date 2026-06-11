@@ -7,6 +7,7 @@ import VendorNavbar from "@/components/layout/VendorNavbar";
 import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
 import { getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
 import { updateUserProfileMultipart } from "@/services/usersApi";
+import LeafletMap, { parseAddressCoords } from "@/components/ui/LeafletMap";
 
 const BOLIVIAN_DEPARTMENTS = [
   "Santa Cruz",
@@ -202,8 +203,13 @@ export default function EditProfilePage() {
       }
     }
 
-    if (!address.trim()) {
+    const parsedAddress = parseAddressCoords(address);
+    if (!parsedAddress.text.trim()) {
       setValidationError("La dirección es requerida.");
+      return;
+    }
+    if (!parsedAddress.hasCoords) {
+      setValidationError("Marca tu ubicación exacta en el mapa.");
       return;
     }
 
@@ -402,17 +408,13 @@ export default function EditProfilePage() {
               </div>
             </div>
 
-            <div>
-              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${theme.mutedText}`}>Dirección Completa</label>
-              <textarea
-                required
-                rows={3}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Ej. Calle Aroma #450, Entre 24 de Septiembre y Libertad"
-                className={`${theme.inputClass} resize-none py-3`}
-              />
-            </div>
+            <LeafletMap
+              value={address}
+              onChange={setAddress}
+              label="Ubicación de entrega"
+              helperText="Escribe una referencia y marca tu punto exacto en el mapa para tus pedidos."
+              tone={theme.mode === "customer" ? "light" : "dark"}
+            />
 
             <div className={`border-t pt-8 ${theme.dividerClass} space-y-6`}>
               <div>

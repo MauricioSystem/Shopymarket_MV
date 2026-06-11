@@ -11,6 +11,21 @@ const ratingTarget = {
     },
 };
 
+const voteTarget = {
+    product: {
+        idName: 'productId',
+        column: 'product_id',
+        votesTable: 'product_votes',
+        targetTable: 'products',
+    },
+    service: {
+        idName: 'serviceId',
+        column: 'service_id',
+        votesTable: 'service_votes',
+        targetTable: 'services',
+    },
+};
+
 const getTargetConfig = (targetType) => {
     const config = ratingTarget[targetType];
     if (!config) {
@@ -19,6 +34,21 @@ const getTargetConfig = (targetType) => {
     return config;
 };
 
+const getVoteConfig = (targetType) => {
+    const config = voteTarget[targetType];
+    if (!config) {
+        throw new Error('Tipo de voto no válido');
+    }
+    return config;
+};
+
+const ratingWhereClause = (column) => `
+    ${column} = $1
+    AND product_id IS NULL
+    AND service_id IS NULL
+    AND ${column === 'store_id' ? 'service_profile_id' : 'store_id'} IS NULL
+`;
+
 const getRatingStats = async (targetType, targetId, userId) => {
     const { column } = getTargetConfig(targetType);
     const statsResult = await pool.query(
@@ -26,12 +56,16 @@ const getRatingStats = async (targetType, targetId, userId) => {
         SELECT
             COUNT(*)::INTEGER AS rating_count,
             COALESCE(ROUND(AVG(rating)::NUMERIC, 2), 0)::NUMERIC AS average_rating,
-            COALESCE(ROUND((AVG(rating) / 5 * 100)::NUMERIC, 2), 0)::NUMERIC AS rating_percentage
+            COALESCE(ROUND((AVG(rating) / 5 * 100)::NUMERIC, 2), 0)::NUMERIC AS rating_percentage,
+            jsonb_build_object(
+                '5', COUNT(*) FILTER (WHERE rating = 5)::INTEGER,
+                '4', COUNT(*) FILTER (WHERE rating = 4)::INTEGER,
+                '3', COUNT(*) FILTER (WHERE rating = 3)::INTEGER,
+                '2', COUNT(*) FILTER (WHERE rating = 2)::INTEGER,
+                '1', COUNT(*) FILTER (WHERE rating = 1)::INTEGER
+            ) AS rating_breakdown
         FROM reviews
-        WHERE ${column} = $1
-            AND product_id IS NULL
-            AND service_id IS NULL
-            AND ${column === 'store_id' ? 'service_profile_id' : 'store_id'} IS NULL
+        WHERE ${ratingWhereClause(column)}
         `,
         [targetId]
     );
@@ -42,10 +76,7 @@ const getRatingStats = async (targetType, targetId, userId) => {
             `
             SELECT id, rating
             FROM reviews
-            WHERE ${column} = $1 AND user_id = $2
-                AND product_id IS NULL
-                AND service_id IS NULL
-                AND ${column === 'store_id' ? 'service_profile_id' : 'store_id'} IS NULL
+            WHERE ${ratingWhereClause(column)} AND user_id = $2
             LIMIT 1
             `,
             [targetId, userId]
@@ -74,10 +105,7 @@ const syncRatingStats = async (client, targetType, targetId) => {
                 COALESCE(ROUND(AVG(rating)::NUMERIC, 2), 0)::NUMERIC AS average_rating,
                 COALESCE(ROUND((AVG(rating) / 5 * 100)::NUMERIC, 2), 0)::NUMERIC AS rating_percentage
             FROM reviews
-            WHERE ${column} = $1
-                AND product_id IS NULL
-                AND service_id IS NULL
-                AND ${column === 'store_id' ? 'service_profile_id' : 'store_id'} IS NULL
+            WHERE ${ratingWhereClause(column)}
         ) stats
         WHERE ${table}.id = $1
         `,
@@ -95,10 +123,7 @@ const upsertRating = async ({ targetType, targetId, userId, rating }) => {
             `
             SELECT id
             FROM reviews
-            WHERE ${column} = $1 AND user_id = $2
-                AND product_id IS NULL
-                AND service_id IS NULL
-                AND ${column === 'store_id' ? 'service_profile_id' : 'store_id'} IS NULL
+            WHERE ${ratingWhereClause(column)} AND user_id = $2
             LIMIT 1
             `,
             [targetId, userId]
@@ -139,17 +164,18 @@ const upsertRating = async ({ targetType, targetId, userId, rating }) => {
     }
 };
 
-const getProductVoteStats = async (productId, userId) => {
+const getVoteStats = async (targetType, targetId, userId) => {
+    const { column, votesTable } = getVoteConfig(targetType);
     const statsResult = await pool.query(
         `
         SELECT
             COALESCE(SUM(CASE WHEN vote = 1 THEN 1 ELSE 0 END), 0)::INTEGER AS like_count,
             COALESCE(SUM(CASE WHEN vote = -1 THEN 1 ELSE 0 END), 0)::INTEGER AS dislike_count,
             COALESCE(SUM(vote), 0)::INTEGER AS vote_score
-        FROM product_votes
-        WHERE product_id = $1
+        FROM ${votesTable}
+        WHERE ${column} = $1
         `,
-        [productId]
+        [targetId]
     );
 
     let userVote = null;
@@ -157,11 +183,11 @@ const getProductVoteStats = async (productId, userId) => {
         const userResult = await pool.query(
             `
             SELECT id, vote
-            FROM product_votes
-            WHERE product_id = $1 AND user_id = $2
+            FROM ${votesTable}
+            WHERE ${column} = $1 AND user_id = $2
             LIMIT 1
             `,
-            [productId, userId]
+            [targetId, userId]
         );
         userVote = userResult.rows[0] || null;
     }
@@ -172,10 +198,11 @@ const getProductVoteStats = async (productId, userId) => {
     };
 };
 
-const syncProductVoteStats = async (client, productId) => {
+const syncVoteStats = async (client, targetType, targetId) => {
+    const { column, votesTable, targetTable } = getVoteConfig(targetType);
     await client.query(
         `
-        UPDATE products
+        UPDATE ${targetTable}
         SET
             like_count = stats.like_count,
             dislike_count = stats.dislike_count,
@@ -185,31 +212,32 @@ const syncProductVoteStats = async (client, productId) => {
                 COALESCE(SUM(CASE WHEN vote = 1 THEN 1 ELSE 0 END), 0)::INTEGER AS like_count,
                 COALESCE(SUM(CASE WHEN vote = -1 THEN 1 ELSE 0 END), 0)::INTEGER AS dislike_count,
                 COALESCE(SUM(vote), 0)::INTEGER AS vote_score
-            FROM product_votes
-            WHERE product_id = $1
+            FROM ${votesTable}
+            WHERE ${column} = $1
         ) stats
-        WHERE products.id = $1
+        WHERE ${targetTable}.id = $1
         `,
-        [productId]
+        [targetId]
     );
 };
 
-const upsertProductVote = async ({ productId, userId, vote }) => {
+const upsertVote = async ({ targetType, targetId, userId, vote }) => {
+    const { column, votesTable } = getVoteConfig(targetType);
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
         const saved = await client.query(
             `
-            INSERT INTO product_votes (product_id, user_id, vote)
+            INSERT INTO ${votesTable} (${column}, user_id, vote)
             VALUES ($1, $2, $3)
-            ON CONFLICT (product_id, user_id)
+            ON CONFLICT (${column}, user_id)
             DO UPDATE SET vote = EXCLUDED.vote, updated_at = NOW()
             RETURNING *
             `,
-            [productId, userId, vote]
+            [targetId, userId, vote]
         );
-        await syncProductVoteStats(client, productId);
+        await syncVoteStats(client, targetType, targetId);
         await client.query('COMMIT');
         return saved.rows[0];
     } catch (error) {
@@ -220,20 +248,21 @@ const upsertProductVote = async ({ productId, userId, vote }) => {
     }
 };
 
-const deleteProductVote = async (productId, userId) => {
+const deleteVote = async (targetType, targetId, userId) => {
+    const { column, votesTable } = getVoteConfig(targetType);
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
         const result = await client.query(
             `
-            DELETE FROM product_votes
-            WHERE product_id = $1 AND user_id = $2
+            DELETE FROM ${votesTable}
+            WHERE ${column} = $1 AND user_id = $2
             RETURNING *
             `,
-            [productId, userId]
+            [targetId, userId]
         );
-        await syncProductVoteStats(client, productId);
+        await syncVoteStats(client, targetType, targetId);
         await client.query('COMMIT');
         return result.rows[0] || null;
     } catch (error) {
@@ -247,7 +276,7 @@ const deleteProductVote = async (productId, userId) => {
 module.exports = {
     getRatingStats,
     upsertRating,
-    getProductVoteStats,
-    upsertProductVote,
-    deleteProductVote,
+    getVoteStats,
+    upsertVote,
+    deleteVote,
 };

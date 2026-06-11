@@ -85,11 +85,13 @@ const createOrderInTransaction = async (orderData) => {
 
 const getOrderById = async (orderId) => {
     const query = `
-        SELECT o.id, o.customer_user_id, o.store_id, o.delivery_user_id, o.order_type, o.status, 
+        SELECT o.id, o.customer_user_id, o.store_id, o.order_type, o.status, 
                o.subtotal, o.discount, o.shipping_cost, o.total, o.delivery_address, o.created_at,
-               (u.first_name || ' ' || COALESCE(u.last_name, '')) AS customer_name, u.email AS customer_email
+               (u.first_name || ' ' || COALESCE(u.last_name, '')) AS customer_name, u.email AS customer_email,
+               st.name AS store_name, st.address AS store_address, st.city AS store_city
         FROM orders o
         LEFT JOIN users u ON o.customer_user_id = u.id
+        LEFT JOIN stores st ON o.store_id = st.id
         WHERE o.id = $1
     `;
     const result = await pool.query(query, [orderId]);
@@ -112,11 +114,13 @@ const getOrderDetails = async (orderId) => {
 
 const getOrdersByCustomerId = async (customerId) => {
     const query = `
-        SELECT id, customer_user_id, store_id, delivery_user_id, order_type, status, 
-               subtotal, discount, shipping_cost, total, delivery_address, created_at
-        FROM orders
-        WHERE customer_user_id = $1
-        ORDER BY created_at DESC
+        SELECT o.id, o.customer_user_id, o.store_id, o.order_type, o.status, 
+               o.subtotal, o.discount, o.shipping_cost, o.total, o.delivery_address, o.created_at,
+               st.name AS store_name, st.address AS store_address, st.city AS store_city
+        FROM orders o
+        LEFT JOIN stores st ON o.store_id = st.id
+        WHERE o.customer_user_id = $1
+        ORDER BY o.created_at DESC
     `;
     const result = await pool.query(query, [customerId]);
     return result.rows;
@@ -124,11 +128,13 @@ const getOrdersByCustomerId = async (customerId) => {
 
 const getOrdersByStoreId = async (storeId) => {
     const query = `
-        SELECT o.id, o.customer_user_id, o.store_id, o.delivery_user_id, o.order_type, o.status, 
+        SELECT o.id, o.customer_user_id, o.store_id, o.order_type, o.status, 
                o.subtotal, o.discount, o.shipping_cost, o.total, o.delivery_address, o.created_at,
-               (u.first_name || ' ' || COALESCE(u.last_name, '')) AS customer_name, u.email AS customer_email
+               (u.first_name || ' ' || COALESCE(u.last_name, '')) AS customer_name, u.email AS customer_email,
+               st.name AS store_name, st.address AS store_address, st.city AS store_city
         FROM orders o
         LEFT JOIN users u ON o.customer_user_id = u.id
+        LEFT JOIN stores st ON o.store_id = st.id
         WHERE o.store_id = $1
         ORDER BY o.created_at DESC
     `;
@@ -138,10 +144,12 @@ const getOrdersByStoreId = async (storeId) => {
 
 const getAllOrders = async () => {
     const query = `
-        SELECT id, customer_user_id, store_id, delivery_user_id, order_type, status, 
-               subtotal, discount, shipping_cost, total, delivery_address, created_at
-        FROM orders
-        ORDER BY created_at DESC
+        SELECT o.id, o.customer_user_id, o.store_id, o.order_type, o.status, 
+               o.subtotal, o.discount, o.shipping_cost, o.total, o.delivery_address, o.created_at,
+               st.name AS store_name, st.address AS store_address, st.city AS store_city
+        FROM orders o
+        LEFT JOIN stores st ON o.store_id = st.id
+        ORDER BY o.created_at DESC
     `;
     const result = await pool.query(query);
     return result.rows;
@@ -152,20 +160,9 @@ const updateOrderStatus = async (orderId, status) => {
         UPDATE orders
         SET status = $1
         WHERE id = $2
-        RETURNING id, customer_user_id, store_id, delivery_user_id, order_type, status, total
+        RETURNING id, customer_user_id, store_id, order_type, status, total
     `;
     const result = await pool.query(query, [status, orderId]);
-    return result.rows[0] || null;
-};
-
-const assignDeliveryUser = async (orderId, deliveryUserId) => {
-    const query = `
-        UPDATE orders
-        SET delivery_user_id = $1
-        WHERE id = $2
-        RETURNING id, customer_user_id, store_id, delivery_user_id, order_type, status, total
-    `;
-    const result = await pool.query(query, [deliveryUserId, orderId]);
     return result.rows[0] || null;
 };
 
@@ -176,6 +173,5 @@ module.exports = {
     getOrdersByCustomerId,
     getOrdersByStoreId,
     getAllOrders,
-    updateOrderStatus,
-    assignDeliveryUser
+    updateOrderStatus
 };

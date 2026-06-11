@@ -15,6 +15,7 @@ const productRoutes = require('./routes/product/productRoutes');
 const ratingRoutes = require('./routes/rating/ratingRoutes');
 const cartRoutes = require('./routes/cart/cartRoutes');
 const orderRoutes = require('./routes/order/orderRoutes');
+const shippingRoutes = require('./routes/shipping/shippingRoutes');
 const seoRoutes = require('./routes/seo/seoRoutes');
 const { getSitemap, getRobots } = require('./controllers/seo/seoControllers');
 
@@ -50,6 +51,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/ratings', ratingRoutes);
 app.use('/api/carts', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/shipping', shippingRoutes);
 app.use('/api/seo', seoRoutes);
 
 app.listen(PORT, () => {

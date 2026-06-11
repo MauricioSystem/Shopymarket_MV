@@ -18,6 +18,7 @@ import DeliveryDashboard from "./pages/dashboards/delivery/DeliveryDashboard";
 import ProfilePage from "./pages/profile/ProfilePage";
 import EditProfilePage from "./pages/profile/EditProfilePage";
 import MyOrdersPage from "./pages/customer/MyOrdersPage";
+import OrderDetailPage from "./pages/customer/OrderDetailPage";
 
 // Cart Imports
 import CheckoutPage from "./pages/cart/CheckoutPage";
@@ -176,6 +177,15 @@ function App() {
         element={
           <ProtectedRoute>
             <MyOrdersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/order/:id"
+        element={
+          <ProtectedRoute>
+            <OrderDetailPage />
           </ProtectedRoute>
         }
       />

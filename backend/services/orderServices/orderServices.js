@@ -210,11 +210,9 @@ const changeOrderStatus = async (orderId, status, userId, userRole) => {
             throw new Error('Order not found');
         }
 
-        if (userRole === 'repartidor') {
-            const allowedRepartidorStatuses = ['picked_up', 'delivered', 'cancelled'];
-            if (!allowedRepartidorStatuses.includes(status)) {
-                throw new Error('Status transition not allowed for repartidor');
-            }
+        // Only admin or super_admin can change order status
+        if (userRole !== 'admin' && userRole !== 'super_admin') {
+            throw new Error('Unauthorized: Only vendors/admin can change order status');
         }
 
         const updatedOrder = await orderModel.updateOrderStatus(orderId, status);

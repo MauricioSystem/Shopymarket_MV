@@ -4,6 +4,13 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getAllServices,
   getAllServiceProfiles,
+  getServiceProfileRatingStats,
+  saveServiceProfileRatingStats,
+  getServiceVoteStats,
+  saveServiceVoteStats,
+  deleteServiceVoteStats,
+  ratingStatsFromEntity,
+  voteStatsFromEntity,
 } from "@/services/marketApi";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
@@ -12,12 +19,6 @@ import { API_BASE_URL } from "@/config/appSettings";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { StarRatingPanel, ProductVotePanel } from "@/components/RatingActions";
-import {
-  getStoreRating,
-  submitStoreRating,
-  getItemLikes,
-  submitItemVote,
-} from "@/utils/ratingStorage";
 
 const API_BASE = API_BASE_URL;
 
@@ -50,7 +51,10 @@ export default function ServiceDetailPage() {
           const found = servicesList.find(s => Number(s.id) === Number(id));
           if (found) {
             setService(found);
-            const likesData = getItemLikes(found.id, "service");
+            const userId = user?.id || user?.email;
+            const likesData = userId
+              ? await getServiceVoteStats(found.id, token, userId)
+              : voteStatsFromEntity(found);
             setServiceVoteStats(likesData);
 
             const profilesList = Array.isArray(profilesRes) ? profilesRes : profilesRes.data;
@@ -58,7 +62,9 @@ export default function ServiceDetailPage() {
               const p = profilesList.find(pr => Number(pr.id) === Number(found.service_profile_id));
               if (p) {
                 setProvider(p);
-                const rating = getStoreRating(p.id, true);
+                const rating = userId
+                  ? await getServiceProfileRatingStats(p.id, token, userId)
+                  : ratingStatsFromEntity(p);
                 setRatingStats(rating);
               }
             }
@@ -73,7 +79,7 @@ export default function ServiceDetailPage() {
       }
     }
     if (id) fetchService();
-  }, [id]);
+  }, [id, token, user]);
 
   const isOwner = isAuthenticated && user && provider && Number(provider.admin_user_id) === Number(user.id);
 
@@ -112,11 +118,9 @@ export default function ServiceDetailPage() {
 
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const result = submitStoreRating(provider.id, true, userId, rating);
-      if (result) {
-        setRatingStats(result);
-        setRatingMessage({ type: "success", text: "Calificación guardada." });
-      }
+      const result = await saveServiceProfileRatingStats(provider.id, rating, token, userId);
+      setRatingStats(result);
+      setRatingMessage({ type: "success", text: "Calificación guardada." });
     } catch (err) {
       setRatingMessage({ type: "error", text: err?.message || "No se pudo guardar la calificación." });
     } finally {
@@ -135,11 +139,13 @@ export default function ServiceDetailPage() {
 
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const newStats = submitItemVote(service.id, "service", userId, vote === 1 ? "like" : "dislike");
-      if (newStats) {
-        setServiceVoteStats(newStats);
-        setServiceVoteMessage({ type: "success", text: "Voto guardado." });
-      }
+      const currentVote = Number(serviceVoteStats?.userVote || serviceVoteStats?.userVotes?.[userId] || 0);
+      const newStats = currentVote === vote
+        ? await deleteServiceVoteStats(service.id, token, userId)
+        : await saveServiceVoteStats(service.id, vote, token, userId);
+      setServiceVoteStats(newStats);
+      setService((current) => current ? { ...current, ...newStats } : current);
+      setServiceVoteMessage({ type: "success", text: "Voto guardado." });
     } catch (err) {
       setServiceVoteMessage({ type: "error", text: err?.message || "No se pudo guardar el voto." });
     } finally {
@@ -277,7 +283,7 @@ export default function ServiceDetailPage() {
               <ProductVotePanel
                 likes={serviceVoteStats?.likes || 0}
                 dislikes={serviceVoteStats?.dislikes || 0}
-                userVote={user?.id || user?.email ? serviceVoteStats?.userVotes?.[user?.id || user?.email] || 0 : 0}
+                userVote={serviceVoteStats?.userVote || (user?.id || user?.email ? serviceVoteStats?.userVotes?.[user?.id || user?.email] || 0 : 0)}
                 canInteract={isAuthenticated && !isOwner}
                 onVote={handleServiceVote}
                 loading={serviceVoteLoading}

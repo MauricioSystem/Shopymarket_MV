@@ -1,5 +1,6 @@
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import LeafletMap from "@/components/ui/LeafletMap";
 
 import AuthField from "@/components/auth/AuthField";
 import ModeSwitchLink from "@/components/auth/ModeSwitchLink";
@@ -51,12 +52,6 @@ const registerFields = [
     ],
     autoComplete: "address-level2",
   },
-  {
-    name: "address",
-    label: "Dirección",
-    placeholder: "Calle 123 #45-67",
-    autoComplete: "street-address",
-  },
 ];
 
 function AuthFormPanel({
@@ -75,9 +70,12 @@ function AuthFormPanel({
   onSelectRole,
   roleOptions = [],
   onSubmit,
+  reactivationStep = "request",
 }) {
   const isRegisterMode = formMode === "register";
   const isReactivateMode = formMode === "reactivate";
+  const isReactivationVerifyStep = isReactivateMode && reactivationStep === "verify";
+  const isReactivationPasswordStep = isReactivateMode && reactivationStep === "password";
   const isDeliveryMode = accessRole === AUTH_ROLES.DELIVERY;
   const isAdministratorMode =
     isAdminLoginRoute || accessRole === AUTH_ROLES.ADMINISTRATOR;
@@ -167,7 +165,7 @@ function AuthFormPanel({
                   className={`mt-3 max-w-lg text-sm leading-7 sm:text-[0.95rem] ${mutedTextClass}`}
                 >
                   {isReactivateMode
-                    ? "Recupera tu cuenta eliminada con el mismo correo y contraseña."
+                    ? "Recupera tu cuenta eliminada con un código enviado a tu correo."
                     : isAdministratorMode
                       ? "Acceso reservado para la administración general del sistema."
                       : isVendorMode
@@ -267,42 +265,78 @@ function AuthFormPanel({
                     options={field.options}
                   />
                 ))}
+                <div className="sm:col-span-2">
+                  <LeafletMap
+                    value={formData.address || ""}
+                    onChange={(value) =>
+                      onFieldChange({
+                        target: { name: "address", type: "text", value },
+                      })
+                    }
+                    label="Ubicación de entrega"
+                    helperText="Escribe una referencia y marca tu punto exacto en el mapa."
+                    tone={useDarkShell || isDeliveryMode ? "dark" : "light"}
+                  />
+                  {formErrors.address ? (
+                    <p className="mt-1 text-xs font-semibold text-red-500">
+                      {formErrors.address}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
             <div className="grid gap-3">
-              <AuthField
-                label="Correo electrónico"
-                name="email"
-                type="email"
-                value={formData.email || ""}
-                onChange={onFieldChange}
-                placeholder="correo@gmail.com"
-                autoComplete="email"
-                error={formErrors.email}
-              />
-
-              <AuthField
-                label="Contraseña"
-                name="password"
-                type="password"
-                value={formData.password || ""}
-                onChange={onFieldChange}
-                placeholder="••••••••"
-                autoComplete={
-                  isRegisterMode ? "new-password" : "current-password"
-                }
-                error={formErrors.password}
-                helperText={
-                  isRegisterMode
-                    ? "Usa al menos 8 caracteres para una mejor seguridad."
-                    : undefined
-                }
-              />
-
-              {isRegisterMode ? (
+              {!isReactivationVerifyStep && !isReactivationPasswordStep ? (
                 <AuthField
-                  label="Confirmar contraseña"
+                  label="Correo electrónico"
+                  name="email"
+                  type="email"
+                  value={formData.email || ""}
+                  onChange={onFieldChange}
+                  placeholder="correo@gmail.com"
+                  autoComplete="email"
+                  error={formErrors.email}
+                />
+              ) : null}
+
+              {isReactivationVerifyStep ? (
+                <AuthField
+                  label="Código de recuperación"
+                  name="code"
+                  type="text"
+                  value={formData.code || ""}
+                  onChange={onFieldChange}
+                  placeholder="12345"
+                  autoComplete="one-time-code"
+                  error={formErrors.code}
+                  maxLength={5}
+                />
+              ) : null}
+
+              {!isReactivateMode || isReactivationPasswordStep ? (
+                <AuthField
+                  label={isReactivationPasswordStep ? "Nueva contraseña" : "Contraseña"}
+                  name="password"
+                  type="password"
+                  value={formData.password || ""}
+                  onChange={onFieldChange}
+                  placeholder="••••••••"
+                  autoComplete={
+                    isRegisterMode || isReactivationPasswordStep ? "new-password" : "current-password"
+                  }
+                  error={formErrors.password}
+                  helperText={
+                    isRegisterMode || isReactivationPasswordStep
+                      ? "Usa al menos 8 caracteres para una mejor seguridad."
+                      : undefined
+                  }
+                />
+              ) : null}
+
+              {isRegisterMode || isReactivationPasswordStep ? (
+                <AuthField
+                  label={isReactivationPasswordStep ? "Confirmar nueva contraseña" : "Confirmar contraseña"}
                   name="confirmPassword"
                   type="password"
                   value={formData.confirmPassword || ""}
@@ -328,7 +362,11 @@ function AuthFormPanel({
               {isRegisterMode
                 ? "Crear cuenta y continuar"
                 : isReactivateMode
-                  ? "Reactivar cuenta"
+                  ? reactivationStep === "request"
+                    ? "Enviar código"
+                    : reactivationStep === "verify"
+                      ? "Verificar código"
+                      : "Guardar nueva contraseña"
                   : isAdministratorMode
                     ? "Entrar al panel de administración"
                     : "Entrar a ShopyMarket"}
@@ -394,7 +432,7 @@ function AuthFormPanel({
                 onClick={() => onToggleMode('reactivate')}
                 className="mt-3 block"
               >
-                ¿Tu cuenta fue eliminada? Reactiva tu cuenta aquí.
+                ¿Tu cuenta fue eliminada? Recupera tu cuenta aquí.
               </ModeSwitchLink>
             ) : (
               <ModeSwitchLink

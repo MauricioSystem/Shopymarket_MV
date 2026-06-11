@@ -15,7 +15,7 @@ export function StarRatingPanel({
 }) {
   const average = normalizeNumber(stats?.average);
   const count = normalizeNumber(stats?.count);
-  const userRating = userId ? normalizeNumber(stats?.userVotes?.[userId]) : 0;
+  const userRating = normalizeNumber(stats?.userVote || (userId ? stats?.userVotes?.[userId] : 0));
   const [hoverRating, setHoverRating] = useState(0);
 
   const shellClass =
@@ -97,7 +97,7 @@ export function ProductVotePanel({
   const idleClass = "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50";
 
   const handleVoteClick = (voteVal) => {
-    if (loading) return;
+    if (!canInteract || loading) return;
     onVote(voteVal);
   };
 
@@ -113,7 +113,7 @@ export function ProductVotePanel({
         <div className="flex gap-2">
           <button
             type="button"
-            disabled={loading}
+            disabled={!canInteract || loading}
             onClick={() => handleVoteClick(1)}
             className={`flex items-center gap-1.5 rounded-none border px-4 py-2 text-sm font-bold transition-all ${
               userVote === 1
@@ -138,7 +138,7 @@ export function ProductVotePanel({
           
           <button
             type="button"
-            disabled={loading}
+            disabled={!canInteract || loading}
             onClick={() => handleVoteClick(-1)}
             className={`flex items-center gap-1.5 rounded-none border px-4 py-2 text-sm font-bold transition-all ${
               userVote === -1
@@ -198,6 +198,7 @@ export function ProductVoteButtons({
 
   const handleVoteClick = (event, voteVal) => {
     event.stopPropagation();
+    if (!canInteract || loading) return;
     onVote(voteVal);
   };
 
@@ -205,7 +206,7 @@ export function ProductVoteButtons({
     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
-        disabled={loading}
+        disabled={!canInteract || loading}
         onClick={(event) => handleVoteClick(event, 1)}
         className={`flex items-center gap-1 rounded-none border px-2.5 py-1 text-xs font-bold transition-all ${
           userVote === 1
@@ -230,7 +231,7 @@ export function ProductVoteButtons({
 
       <button
         type="button"
-        disabled={loading}
+        disabled={!canInteract || loading}
         onClick={(event) => handleVoteClick(event, -1)}
         className={`flex items-center gap-1 rounded-none border px-2.5 py-1 text-xs font-bold transition-all ${
           userVote === -1

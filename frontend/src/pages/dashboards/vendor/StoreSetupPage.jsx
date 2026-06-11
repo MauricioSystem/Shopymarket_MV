@@ -21,9 +21,11 @@ import {
     createSubcategory,
     getAllProducts,
     getAllServices,
+    ratingStatsFromEntity,
+    voteStatsFromEntity,
 } from '@/services/marketApi';
 import { getStoreOrders, updateOrderStatus, getOrderById } from '@/services/orderApi';
-import { getStoreRating, getStoreVisits, getItemLikes } from '@/utils/ratingStorage';
+import { getStoreVisits } from '@/utils/ratingStorage';
 import Icon from '@/components/ui/Icon';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -557,11 +559,11 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
     }, [activeOrdersList, isServiceView]);
 
     const storeRating = useMemo(() => {
-        return existingStore ? getStoreRating(existingStore.id, false) : null;
+        return existingStore ? ratingStatsFromEntity(existingStore) : null;
     }, [existingStore]);
 
     const profileRating = useMemo(() => {
-        return existingServiceProfile ? getStoreRating(existingServiceProfile.id, true) : null;
+        return existingServiceProfile ? ratingStatsFromEntity(existingServiceProfile) : null;
     }, [existingServiceProfile]);
 
     const averageRating = useMemo(() => {
@@ -581,7 +583,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
         let max = -1;
         if (isServiceView) {
             metricsServices.forEach(s => {
-                const l = getItemLikes(s.id, "service")?.likes || 0;
+                const l = voteStatsFromEntity(s)?.likes || 0;
                 if (l > max) {
                     max = l;
                     top = { name: s.name, likes: l, type: "Servicio" };
@@ -592,7 +594,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
             }
         } else {
             metricsProducts.forEach(p => {
-                const l = getItemLikes(p.id, "product")?.likes || 0;
+                const l = voteStatsFromEntity(p)?.likes || 0;
                 if (l > max) {
                     max = l;
                     top = { name: p.name, likes: l, type: "Producto" };
@@ -696,16 +698,13 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
     // Rating star distribution chart data (Real Data)
     const chartRatingData = useMemo(() => {
         const ratingSum = isServiceView
-            ? (existingServiceProfile ? getStoreRating(existingServiceProfile.id, true) : null)
-            : (existingStore ? getStoreRating(existingStore.id, false) : null);
+            ? (existingServiceProfile ? ratingStatsFromEntity(existingServiceProfile) : null)
+            : (existingStore ? ratingStatsFromEntity(existingStore) : null);
         
         const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-        if (ratingSum && ratingSum.userVotes) {
-            Object.values(ratingSum.userVotes).forEach(val => {
-                const score = Math.round(Number(val));
-                if (starCounts[score] !== undefined) {
-                    starCounts[score]++;
-                }
+        if (ratingSum?.breakdown) {
+            Object.keys(starCounts).forEach((star) => {
+                starCounts[star] = Number(ratingSum.breakdown[star] || 0);
             });
         }
 
@@ -803,7 +802,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
     const featuredProducts = useMemo(() => {
         const sorted = [...metricsProducts].map(p => ({
             ...p,
-            likes: getItemLikes(p.id, "product")?.likes || 0
+            likes: voteStatsFromEntity(p)?.likes || 0
         })).sort((a, b) => b.likes - a.likes);
         return sorted.slice(0, 4);
     }, [metricsProducts]);
@@ -812,7 +811,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
     const featuredServices = useMemo(() => {
         const sorted = [...metricsServices].map(s => ({
             ...s,
-            likes: getItemLikes(s.id, "service")?.likes || 0
+            likes: voteStatsFromEntity(s)?.likes || 0
         })).sort((a, b) => b.likes - a.likes);
         return sorted.slice(0, 4);
     }, [metricsServices]);

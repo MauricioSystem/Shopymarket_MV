@@ -52,8 +52,8 @@ export default function UsersPage() {
       setError("");
       try {
         const data = await getAllUsers(token);
-        const activeUsers = Array.isArray(data) ? data.filter(u => u.status !== "deleted") : [];
-        setUsers(activeUsers);
+        const usersList = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        setUsers(usersList);
       } catch (err) {
         setError(err.message || "No se pudo cargar la lista de usuarios.");
       } finally {
@@ -247,7 +247,8 @@ export default function UsersPage() {
                       <th className="pb-4">Correo</th>
                       <th className="pb-4">Teléfono</th>
                       <th className="pb-4">Ubicación</th>
-                      <th className="pb-4 pr-4">Rol</th>
+                      <th className="pb-4">Rol</th>
+                      <th className="pb-4 pr-4">Estado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -282,9 +283,18 @@ export default function UsersPage() {
                           <td className={`py-4 ${theme.mutedText}`}>
                             {[u.city, u.country].filter(Boolean).join(", ") || "—"}
                           </td>
-                          <td className="py-4 pr-4">
+                          <td className="py-4">
                             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider border-neutral-500/30 text-neutral-400 bg-neutral-500/5`}>
                               {label}
+                            </span>
+                          </td>
+                          <td className="py-4 pr-4">
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider ${
+                              u.status === "deleted"
+                                ? "border-red-500/30 bg-red-500/10 text-red-400"
+                                : "border-green-500/30 bg-green-500/10 text-green-500"
+                            }`}>
+                              {u.status === "deleted" ? "Eliminada" : "Activa"}
                             </span>
                           </td>
                         </tr>

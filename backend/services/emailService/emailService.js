@@ -10,6 +10,7 @@ const sendOrderConfirmationEmail = require('./sendOrderConfirmationEmail');
 const sendOrderStatusUpdateEmail = require('./sendOrderStatusUpdateEmail');
 const sendAccountReactivatedEmail = require('./sendAccountReactivatedEmail');
 const sendServiceBookingEmail = require('./sendServiceBookingEmail');
+const sendReactivationCodeEmail = require('./sendReactivationCodeEmail');
 
 module.exports = {
     addContactToBrevo,
@@ -18,4 +19,5 @@ module.exports = {
     sendOrderStatusUpdateEmail,
     sendAccountReactivatedEmail,
     sendServiceBookingEmail,
+    sendReactivationCodeEmail,
 };

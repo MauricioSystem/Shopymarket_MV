@@ -142,7 +142,116 @@ export async function deleteCategory(token, id) {
     return apiFetch(`/api/categories/${id}`, { token, method: 'DELETE' });
 }
 
-// ─── Ratings ─────────────────────────────────────────────────────────────────
+// ─── Ratings & votes ──────────────────────────────────────────────────────────
+export function normalizeRatingStats(stats = {}, userId) {
+    const count = Number(stats.rating_count ?? stats.count ?? 0);
+    const average = Number(stats.average_rating ?? stats.average ?? 0);
+    const breakdown = stats.rating_breakdown ?? stats.breakdown ?? {};
+    const userRating = Number(stats.user_rating?.rating ?? stats.userRating ?? 0);
+
+    return {
+        average,
+        count,
+        sum: average * count,
+        breakdown: {
+            5: Number(breakdown[5] ?? breakdown['5'] ?? 0),
+            4: Number(breakdown[4] ?? breakdown['4'] ?? 0),
+            3: Number(breakdown[3] ?? breakdown['3'] ?? 0),
+            2: Number(breakdown[2] ?? breakdown['2'] ?? 0),
+            1: Number(breakdown[1] ?? breakdown['1'] ?? 0),
+        },
+        userVotes: userId && userRating ? { [userId]: userRating } : {},
+    };
+}
+
+export function normalizeVoteStats(stats = {}, userId) {
+    const userVote = Number(stats.user_vote?.vote ?? stats.userVote ?? 0);
+
+    return {
+        likes: Number(stats.like_count ?? stats.likes ?? 0),
+        dislikes: Number(stats.dislike_count ?? stats.dislikes ?? 0),
+        voteScore: Number(stats.vote_score ?? stats.voteScore ?? 0),
+        userVote,
+        userVotes: userId && userVote ? { [userId]: userVote } : {},
+    };
+}
+
+export function ratingStatsFromEntity(entity = {}, userId) {
+    return normalizeRatingStats(entity, userId);
+}
+
+export function voteStatsFromEntity(entity = {}, userId) {
+    return normalizeVoteStats(entity, userId);
+}
+
+export async function getStoreRatingStats(storeId, token, userId) {
+    return normalizeRatingStats(await apiFetch(`/api/ratings/stores/${storeId}`, { token }), userId);
+}
+
+export async function saveStoreRatingStats(storeId, rating, token, userId) {
+    const result = await apiFetch(`/api/ratings/stores/${storeId}`, {
+        token,
+        method: 'PUT',
+        body: { rating },
+    });
+    return normalizeRatingStats(result?.stats, userId);
+}
+
+export async function getServiceProfileRatingStats(profileId, token, userId) {
+    return normalizeRatingStats(await apiFetch(`/api/ratings/service-profiles/${profileId}`, { token }), userId);
+}
+
+export async function saveServiceProfileRatingStats(profileId, rating, token, userId) {
+    const result = await apiFetch(`/api/ratings/service-profiles/${profileId}`, {
+        token,
+        method: 'PUT',
+        body: { rating },
+    });
+    return normalizeRatingStats(result?.stats, userId);
+}
+
+export async function getProductVoteStats(productId, token, userId) {
+    return normalizeVoteStats(await apiFetch(`/api/ratings/products/${productId}/votes`, { token }), userId);
+}
+
+export async function saveProductVoteStats(productId, vote, token, userId) {
+    const result = await apiFetch(`/api/ratings/products/${productId}/vote`, {
+        token,
+        method: 'PUT',
+        body: { vote },
+    });
+    return normalizeVoteStats(result?.stats, userId);
+}
+
+export async function deleteProductVoteStats(productId, token, userId) {
+    const result = await apiFetch(`/api/ratings/products/${productId}/vote`, {
+        token,
+        method: 'DELETE',
+    });
+    return normalizeVoteStats(result?.stats, userId);
+}
+
+export async function getServiceVoteStats(serviceId, token, userId) {
+    return normalizeVoteStats(await apiFetch(`/api/ratings/services/${serviceId}/votes`, { token }), userId);
+}
+
+export async function saveServiceVoteStats(serviceId, vote, token, userId) {
+    const result = await apiFetch(`/api/ratings/services/${serviceId}/vote`, {
+        token,
+        method: 'PUT',
+        body: { vote },
+    });
+    return normalizeVoteStats(result?.stats, userId);
+}
+
+export async function deleteServiceVoteStats(serviceId, token, userId) {
+    const result = await apiFetch(`/api/ratings/services/${serviceId}/vote`, {
+        token,
+        method: 'DELETE',
+    });
+    return normalizeVoteStats(result?.stats, userId);
+}
+
 export async function getRatingsByProduct(productId) {
     return apiFetch(`/api/ratings/${productId}`, {});
 }

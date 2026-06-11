@@ -18,15 +18,19 @@ import {
   createService,
   getAllCategories,
   getAllSubcategories,
+  ratingStatsFromEntity,
+  voteStatsFromEntity,
+  saveStoreRatingStats,
+  saveServiceProfileRatingStats,
+  saveProductVoteStats,
+  deleteProductVoteStats,
+  saveServiceVoteStats,
+  deleteServiceVoteStats,
 } from "@/services/marketApi";
 import { API_BASE_URL } from "@/config/appSettings";
 import LeafletMap, { parseAddressCoords } from "@/components/ui/LeafletMap";
 import { ProductVoteButtons, StarRatingPanel } from "@/components/RatingActions";
 import {
-  getStoreRating,
-  submitStoreRating,
-  getItemLikes,
-  submitItemVote,
   trackStoreVisit,
 } from "@/utils/ratingStorage";
 
@@ -223,8 +227,9 @@ export default function StoreDetailPage({ type }) {
       setServiceProfile(currentProfile);
       setRatingMessage(null);
 
-      const storeRatingResult = currentStore ? getStoreRating(currentStore.id, false) : null;
-      const serviceRatingResult = currentProfile ? getStoreRating(currentProfile.id, true) : null;
+      const userKey = user?.id || user?.email;
+      const storeRatingResult = currentStore ? ratingStatsFromEntity(currentStore, userKey) : null;
+      const serviceRatingResult = currentProfile ? ratingStatsFromEntity(currentProfile, userKey) : null;
 
       setStoreRating(storeRatingResult);
       setServiceProfileRating(serviceRatingResult);
@@ -238,7 +243,7 @@ export default function StoreDetailPage({ type }) {
         );
         const mappedProducts = storeProducts.map(p => ({
           ...p,
-          likesData: getItemLikes(p.id, "product")
+          likesData: voteStatsFromEntity(p, userKey)
         }));
         // Sort products descending by likes count
         mappedProducts.sort((a, b) => {
@@ -258,7 +263,7 @@ export default function StoreDetailPage({ type }) {
         const profileServices = allServices.filter((s) => s && Number(s.service_profile_id) === Number(currentProfile.id));
         const mappedServices = profileServices.map(s => ({
           ...s,
-          likesData: getItemLikes(s.id, "service")
+          likesData: voteStatsFromEntity(s, userKey)
         }));
         // Sort services descending by likes count
         mappedServices.sort((a, b) => {
@@ -372,11 +377,11 @@ export default function StoreDetailPage({ type }) {
     try {
       const userId = user?.id || user?.email || "logged_in_user";
       if (isServicesActive) {
-        const result = submitStoreRating(serviceProfile.id, true, userId, rating);
-        if (result) setServiceProfileRating(result);
+        const result = await saveServiceProfileRatingStats(serviceProfile.id, rating, token, userId);
+        setServiceProfileRating(result);
       } else {
-        const result = submitStoreRating(store.id, false, userId, rating);
-        if (result) setStoreRating(result);
+        const result = await saveStoreRatingStats(store.id, rating, token, userId);
+        setStoreRating(result);
       }
       setRatingMessage({ type: "success", text: "Calificación guardada." });
     } catch (err) {
@@ -402,16 +407,17 @@ export default function StoreDetailPage({ type }) {
 
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const newStats = submitItemVote(product.id, "product", userId, vote === 1 ? "like" : "dislike");
-      if (newStats) {
-        setProducts((current) =>
-          current.map((entry) =>
-            Number(entry.id) === Number(product.id)
-              ? { ...entry, likesData: newStats }
-              : entry,
-          ),
-        );
-      }
+      const currentVote = Number(product.likesData?.userVote || product.likesData?.userVotes?.[userId] || 0);
+      const newStats = currentVote === vote
+        ? await deleteProductVoteStats(product.id, token, userId)
+        : await saveProductVoteStats(product.id, vote, token, userId);
+      setProducts((current) =>
+        current.map((entry) =>
+          Number(entry.id) === Number(product.id)
+            ? { ...entry, ...newStats, likesData: newStats }
+            : entry,
+        ),
+      );
     } finally {
       setProductVoteLoading(null);
     }
@@ -433,16 +439,17 @@ export default function StoreDetailPage({ type }) {
 
     try {
       const userId = user?.id || user?.email || "logged_in_user";
-      const newStats = submitItemVote(service.id, "service", userId, vote === 1 ? "like" : "dislike");
-      if (newStats) {
-        setServices((current) =>
-          current.map((entry) =>
-            Number(entry.id) === Number(service.id)
-              ? { ...entry, likesData: newStats }
-              : entry,
-          ),
-        );
-      }
+      const currentVote = Number(service.likesData?.userVote || service.likesData?.userVotes?.[userId] || 0);
+      const newStats = currentVote === vote
+        ? await deleteServiceVoteStats(service.id, token, userId)
+        : await saveServiceVoteStats(service.id, vote, token, userId);
+      setServices((current) =>
+        current.map((entry) =>
+          Number(entry.id) === Number(service.id)
+            ? { ...entry, ...newStats, likesData: newStats }
+            : entry,
+        ),
+      );
     } finally {
       setServiceVoteLoading(null);
     }
@@ -972,7 +979,7 @@ export default function StoreDetailPage({ type }) {
                             <ProductVoteButtons
                               likes={product.likesData?.likes || 0}
                               dislikes={product.likesData?.dislikes || 0}
-                              userVote={user?.id || user?.email ? product.likesData?.userVotes?.[user?.id || user?.email] || 0 : 0}
+                              userVote={product.likesData?.userVote || (user?.id || user?.email ? product.likesData?.userVotes?.[user?.id || user?.email] || 0 : 0)}
                               canInteract={isAuthenticated && !isOwner}
                               onVote={(vote) => handleProductVote(product, vote)}
                               loading={productVoteLoading === product.id}
@@ -1102,7 +1109,7 @@ export default function StoreDetailPage({ type }) {
                             <ProductVoteButtons
                               likes={service.likesData?.likes || 0}
                               dislikes={service.likesData?.dislikes || 0}
-                              userVote={user?.id || user?.email ? service.likesData?.userVotes?.[user?.id || user?.email] || 0 : 0}
+                              userVote={service.likesData?.userVote || (user?.id || user?.email ? service.likesData?.userVotes?.[user?.id || user?.email] || 0 : 0)}
                               canInteract={isAuthenticated && !isOwner}
                               onVote={(vote) => handleServiceVote(service, vote)}
                               loading={serviceVoteLoading === service.id}

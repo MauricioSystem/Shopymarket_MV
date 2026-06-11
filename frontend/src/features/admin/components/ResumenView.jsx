@@ -65,7 +65,7 @@ function MetricCard({ label, value, icon: Icon }) {
 
 export default function ResumenView({ stats }) {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-8">
+    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-8">
       <MetricCard
         label="TOTAL USUARIOS"
         value={stats.total}
@@ -90,6 +90,11 @@ export default function ResumenView({ stats }) {
         label="REPARTIDORES"
         value={stats.repartidor}
         icon={TruckIcon}
+      />
+      <MetricCard
+        label="ELIMINADAS"
+        value={stats.deleted || 0}
+        icon={UsersIcon}
       />
     </div>
   );

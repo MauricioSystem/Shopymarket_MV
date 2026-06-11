@@ -8,6 +8,9 @@ const {
     getProductVotes,
     saveProductVote,
     deleteProductVote,
+    getServiceVotes,
+    saveServiceVote,
+    deleteServiceVote,
 } = require('../../controllers/rating/ratingControllers');
 const { authenticate } = require('../../middlewares');
 
@@ -22,11 +25,14 @@ const optionalAuthenticate = (req, res, next) => {
 router.get('/stores/:storeId', optionalAuthenticate, getStoreRating);
 router.get('/service-profiles/:profileId', optionalAuthenticate, getServiceProfileRating);
 router.get('/products/:productId/votes', optionalAuthenticate, getProductVotes);
+router.get('/services/:serviceId/votes', optionalAuthenticate, getServiceVotes);
 
 router.use(authenticate);
 router.put('/stores/:storeId', saveStoreRating);
 router.put('/service-profiles/:profileId', saveServiceProfileRating);
 router.put('/products/:productId/vote', saveProductVote);
 router.delete('/products/:productId/vote', deleteProductVote);
+router.put('/services/:serviceId/vote', saveServiceVote);
+router.delete('/services/:serviceId/vote', deleteServiceVote);
 
 module.exports = router;

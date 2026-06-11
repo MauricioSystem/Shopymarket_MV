@@ -8,6 +8,7 @@ import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
 import { getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
 import { getStoreByUserId, getServiceProfileByUserId, updateMyStore, updateServiceProfile } from "@/services/marketApi";
 import { deleteUser } from "@/services/usersApi";
+import { parseAddressCoords } from "@/components/ui/LeafletMap";
 
 function getInitials(user) {
   if (!user) return "?";
@@ -168,6 +169,7 @@ export default function ProfilePage() {
   };
 
   const theme = getTheme();
+  const displayAddress = parseAddressCoords(user?.address).text || user?.address || "—";
 
   return (
     <main data-mode={theme.mode} className={`min-h-screen theme-transition pb-16 ${theme.mainClass}`}>
@@ -270,7 +272,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <h3 className={`text-[0.68rem] font-bold uppercase tracking-wider ${theme.mutedText}`}>Dirección Completa</h3>
-                    <p className={`mt-1 text-sm font-medium ${theme.titleText}`}>{user?.address || "—"}</p>
+                    <p className={`mt-1 text-sm font-medium ${theme.titleText}`}>{displayAddress}</p>
                   </div>
                 </div>
 
