@@ -36,3 +36,6 @@ coverage/
 # Uploads / Archivos subidos
 backend/uploads/**/*
 !backend/uploads/**/.gitkeep
+
+# Docker (no ignorar .env.docker ya que es template)
+!.env.docker

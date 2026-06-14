@@ -1,0 +1,145 @@
+# ====================================
+# ShopyMarket — Docker Compose
+# ====================================
+# Orquesta 3 servicios: db, backend, frontend
+#
+# USO:
+#   1. Copia .env.docker como .env:  cp .env.docker .env
+#   2. Edita .env con tus valores reales
+#   3. Construir y levantar:         docker-compose up --build
+#   4. Solo levantar (ya construido): docker-compose up -d
+#   5. Parar todo:                   docker-compose down
+#   6. Parar y borrar volúmenes:     docker-compose down -v
+
+services:
+
+  # ============================================================
+  # 🗄️ BASE DE DATOS — PostgreSQL 16
+  # ============================================================
+  # - NO se expone a internet (sin ports públicos en producción)
+  # - Datos persistidos en volumen 'postgres_data'
+  # - Se inicializa automáticamente con POSTGRES_DB
+  db:
+    image: postgres:16-alpine
+    container_name: shopymarket-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-1010}
+      POSTGRES_DB: ${POSTGRES_DB:-ShopyMarket_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Solo para desarrollo local. En producción, ELIMINA esta línea
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    networks:
+      - shopymarket-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ShopyMarket_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # ⚙️ BACKEND — Node.js / Express API
+  # ============================================================
+  # - Se conecta a 'db' por la red interna de Docker
+  # - DB_HOST=db (nombre del servicio, NO localhost)
+  # - Ejecuta initializer.js al arrancar (crea tablas + seed)
+  # - Uploads persistidos en volumen
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shopymarket-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # --- Base de Datos ---
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-1010}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-ShopyMarket_DB}
+
+      # --- Servidor ---
+      PORT: ${BACKEND_PORT:-3000}
+
+      # --- Autenticación ---
+      JWT_SECRET: ${JWT_SECRET:-shopymarket_jwt_secret_2026_secure}
+
+      # --- Email (Brevo) ---
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-ShopyMarket}
+      EMAIL_DEV_MODE: ${EMAIL_DEV_MODE:-true}
+
+      # --- CORS ---
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+
+      # --- Super Admin ---
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-root@root.com}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-Root123!}
+      SUPERADMIN_FIRST_NAME: ${SUPERADMIN_FIRST_NAME:-Super}
+      SUPERADMIN_LAST_NAME: ${SUPERADMIN_LAST_NAME:-Admin}
+      SUPERADMIN_PHONE: ${SUPERADMIN_PHONE:-+0000000000}
+
+      # --- Entorno ---
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-docker}
+      SITE_URL: ${SITE_URL:-http://localhost}
+      API_URL: ${API_URL:-http://localhost/api}
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      # Solo para desarrollo/debug directo. En producción el tráfico
+      # pasa por Nginx (frontend) que hace proxy a backend:3000
+      - "${BACKEND_EXTERNAL_PORT:-3000}:${BACKEND_PORT:-3000}"
+    networks:
+      - shopymarket-network
+
+  # ============================================================
+  # 🌐 FRONTEND — React/Vite + Nginx
+  # ============================================================
+  # - Multi-stage: Vite build → Nginx sirve estáticos
+  # - Nginx hace proxy reverso de /api/ → backend:3000
+  # - Este es el ÚNICO contenedor que necesita dominio público
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Variables que Vite necesita durante el BUILD
+        # Con proxy de Nginx, el frontend puede usar rutas relativas
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_AUTH_LOGIN_PATHS: ${VITE_AUTH_LOGIN_PATHS:-/auth/login,/api/auth/login,/login}
+        VITE_AUTH_REGISTER_PATHS: ${VITE_AUTH_REGISTER_PATHS:-/auth/register,/api/auth/register,/register}
+    container_name: shopymarket-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Puerto público — este es el que apunta tu dominio
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - shopymarket-network
+
+# ============================================================
+# 📁 VOLÚMENES — Persistencia de datos
+# ============================================================
+volumes:
+  # Datos de PostgreSQL — sobreviven a docker-compose down
+  # Para borrar: docker-compose down -v
+  postgres_data:
+    driver: local
+  # Imágenes subidas por usuarios (productos, tiendas, perfiles)
+  uploads_data:
+    driver: local
+
+# ============================================================
+# 🔗 RED — Comunicación interna entre contenedores
+# ============================================================
+networks:
+  shopymarket-network:
+    driver: bridge

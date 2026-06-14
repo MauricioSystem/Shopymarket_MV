@@ -1,0 +1,99 @@
+# ============================================================
+# Render Blueprint Configuration (render.yaml)
+# ============================================================
+# Este archivo permite desplegar todo el ecosistema (DB, Backend, Frontend)
+# en Render de forma automatizada y conectada.
+#
+# Para usarlo:
+# 1. Sube tu código a GitHub.
+# 2. Ve a Render Dashboard -> Blueprint -> New Blueprint.
+# 3. Selecciona tu repositorio.
+# ============================================================
+
+services:
+  # ----------------------------------------------------------
+  # 🌐 FRONTEND — Sitio Estático (React + Vite)
+  # ----------------------------------------------------------
+  - type: web
+    name: shopymarket-frontend
+    env: static
+    buildCommand: npm run build
+    publishDir: dist
+    # Redirección para Single Page Application (React Router)
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_APP_ENVIRONMENT
+        value: production
+      - key: VITE_SITE_URL
+        value: https://www.shopymarketmv.com
+      - key: VITE_API_URL
+        value: https://api.shopymarketmv.com
+
+  # ----------------------------------------------------------
+  # ⚙️ BACKEND — Servicio Web (Docker/Express)
+  # ----------------------------------------------------------
+  - type: web
+    name: shopymarket-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free # Cambiar a starter si necesitas que no se apague
+    # Configurar puerto interno
+    port: 3000
+    envVars:
+      - key: APP_ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 3000
+      - key: SITE_URL
+        value: https://www.shopymarketmv.com
+      - key: API_URL
+        value: https://api.shopymarketmv.com
+      - key: CORS_ORIGIN
+        value: https://www.shopymarketmv.com,https://shopymarketmv.com
+      
+      # Autogenera una clave secreta para JWT automáticamente en Render
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Conexión automática con la Base de Datos de Render
+      - key: DB_HOST
+        fromDatabase:
+          name: shopymarket-db
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: shopymarket-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: shopymarket-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: shopymarket-db
+          property: database
+      - key: DB_PORT
+        value: "5432"
+
+      # Variables que deberás configurar manualmente en el panel de Render
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: amaliecr@gmail.com
+      - key: BREVO_SENDER_NAME
+        value: ShopyMarket
+      - key: EMAIL_DEV_MODE
+        value: "false"
+
+# ----------------------------------------------------------
+# 🗄️ BASE DE DATOS — PostgreSQL
+# ----------------------------------------------------------
+databases:
+  - name: shopymarket-db
+    plan: free # Nota: el plan free de Render dura 90 días.
+    databaseName: ShopyMarket_DB
+    user: postgres

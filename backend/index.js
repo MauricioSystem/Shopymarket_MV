@@ -22,7 +22,15 @@ const { getSitemap, getRobots } = require('./controllers/seo/seoControllers');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS: restringir orígenes en producción
+const corsOptions = process.env.CORS_ORIGIN
+    ? {
+        origin: process.env.CORS_ORIGIN.split(',').map(o => o.trim()),
+        credentials: true,
+    }
+    : {}; // En desarrollo, permitir todo
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

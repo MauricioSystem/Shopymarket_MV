@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log*
+.env
+.git
+.gitignore
+uploads/product_images/*
+uploads/profile_images/*
+uploads/service_images/*
+uploads/store_images/*
+!uploads/**/.gitkeep
