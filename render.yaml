@@ -14,11 +14,11 @@ services:
   # ----------------------------------------------------------
   # 🌐 FRONTEND — Sitio Estático (React + Vite)
   # ----------------------------------------------------------
-  - type: web
+  - type: static
     name: shopymarket-frontend
-    env: static
+    rootDir: frontend
     buildCommand: npm run build
-    publishDir: dist
+    staticPublishPath: dist
     # Redirección para Single Page Application (React Router)
     routes:
       - type: rewrite
@@ -37,12 +37,10 @@ services:
   # ----------------------------------------------------------
   - type: web
     name: shopymarket-backend
-    env: docker
+    runtime: docker
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
     plan: free # Cambiar a starter si necesitas que no se apague
-    # Configurar puerto interno
-    port: 3000
     envVars:
       - key: APP_ENVIRONMENT
         value: production
