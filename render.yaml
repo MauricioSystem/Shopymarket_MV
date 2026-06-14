@@ -14,8 +14,9 @@ services:
   # ----------------------------------------------------------
   # 🌐 FRONTEND — Sitio Estático (React + Vite)
   # ----------------------------------------------------------
-  - type: static
+  - type: web
     name: shopymarket-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm run build
     staticPublishPath: dist
