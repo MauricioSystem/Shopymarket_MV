@@ -94,5 +94,5 @@ services:
 databases:
   - name: shopymarket-db
     plan: free # Nota: el plan free de Render dura 90 días.
-    databaseName: ShopyMarket_DB
-    user: postgres
+    databaseName: shopymarket_db
+    user: shopymarket_user
