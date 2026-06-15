@@ -270,16 +270,18 @@ export function StoreFormSection({
                         )}
                     </div>
 
-                    <div className="grid gap-8 xl:grid-cols-2">
+                    <div className="grid gap-8 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] md:items-start">
                         <div className="space-y-5">
                             <FieldGroup>
-                                <Input
-                                    label="Nombre de la tienda *"
-                                    name="store_name"
-                                    value={storeForm.name}
-                                    onChange={handleStoreField('name')}
-                                    required
-                                />
+                                <div className="col-span-1 sm:col-span-2">
+                                    <Input
+                                        label="Nombre de la tienda *"
+                                        name="store_name"
+                                        value={storeForm.name}
+                                        onChange={handleStoreField('name')}
+                                        required
+                                    />
+                                </div>
                                 <Select
                                     label="Ciudad"
                                     name="store_city"
@@ -311,22 +313,26 @@ export function StoreFormSection({
                                         label="Ubicación y Dirección de la Tienda"
                                     />
                                 </div>
-                                <Input
-                                    label="Logo de la tienda"
-                                    name="store_logo"
-                                    type="file"
-                                    accept=".png, .jpg, .jpeg"
-                                    onChange={handleLogoChange}
-                                    helperText={existingStore?.logo_url ? "Ya tienes un logo subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
-                                />
-                                <Input
-                                    label="Banner de la tienda"
-                                    name="store_banner"
-                                    type="file"
-                                    accept=".png, .jpg, .jpeg"
-                                    onChange={handleBannerChange}
-                                    helperText={existingStore?.banner_url ? "Ya tienes un banner subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
-                                />
+                                <div className="col-span-1 sm:col-span-2">
+                                    <Input
+                                        label="Logo de la tienda"
+                                        name="store_logo"
+                                        type="file"
+                                        accept=".png, .jpg, .jpeg"
+                                        onChange={handleLogoChange}
+                                        helperText={existingStore?.logo_url ? "Ya tienes un logo subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
+                                    />
+                                </div>
+                                <div className="col-span-1 sm:col-span-2">
+                                    <Input
+                                        label="Banner de la tienda"
+                                        name="store_banner"
+                                        type="file"
+                                        accept=".png, .jpg, .jpeg"
+                                        onChange={handleBannerChange}
+                                        helperText={existingStore?.banner_url ? "Ya tienes un banner subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
+                                    />
+                                </div>
                             </FieldGroup>
 
                             <Input
@@ -392,16 +398,18 @@ export function StoreFormSection({
                         )}
                     </div>
 
-                    <div className="grid gap-8 xl:grid-cols-2">
+                    <div className="grid gap-8 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] md:items-start">
                         <div className="space-y-5">
                             <FieldGroup>
-                                <Input
-                                    label="Nombre del perfil *"
-                                    name="sp_name"
-                                    value={serviceProfileForm.name}
-                                    onChange={handleServiceField('name')}
-                                    required
-                                />
+                                <div className="col-span-1 sm:col-span-2">
+                                    <Input
+                                        label="Nombre del perfil *"
+                                        name="sp_name"
+                                        value={serviceProfileForm.name}
+                                        onChange={handleServiceField('name')}
+                                        required
+                                    />
+                                </div>
                                 <Select
                                     label="Ciudad"
                                     name="sp_city"
@@ -433,22 +441,26 @@ export function StoreFormSection({
                                         label="Ubicación y Dirección de Servicios"
                                     />
                                 </div>
-                                <Input
-                                    label="Logo o Marca Personal"
-                                    name="sp_logo"
-                                    type="file"
-                                    accept=".png, .jpg, .jpeg"
-                                    onChange={handleServiceLogoChange}
-                                    helperText={existingServiceProfile?.profile_image_url ? "Ya tienes un logo subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
-                                />
-                                <Input
-                                    label="Banner del Perfil"
-                                    name="sp_banner"
-                                    type="file"
-                                    accept=".png, .jpg, .jpeg"
-                                    onChange={handleServiceBannerChange}
-                                    helperText={existingServiceProfile?.banner_url ? "Ya tienes un banner subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
-                                />
+                                <div className="col-span-1 sm:col-span-2">
+                                    <Input
+                                        label="Logo o Marca Personal"
+                                        name="sp_logo"
+                                        type="file"
+                                        accept=".png, .jpg, .jpeg"
+                                        onChange={handleServiceLogoChange}
+                                        helperText={existingServiceProfile?.profile_image_url ? "Ya tienes un logo subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
+                                    />
+                                </div>
+                                <div className="col-span-1 sm:col-span-2">
+                                    <Input
+                                        label="Banner del Perfil"
+                                        name="sp_banner"
+                                        type="file"
+                                        accept=".png, .jpg, .jpeg"
+                                        onChange={handleServiceBannerChange}
+                                        helperText={existingServiceProfile?.banner_url ? "Ya tienes un banner subido. Selecciona otro si deseas cambiarlo." : "Formatos permitidos: PNG, JPG o JPEG. Máx: 5MB"}
+                                    />
+                                </div>
                             </FieldGroup>
 
                             <Input

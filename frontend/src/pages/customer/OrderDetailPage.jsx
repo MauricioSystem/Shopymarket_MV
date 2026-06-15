@@ -254,14 +254,6 @@ export default function OrderDetailPage() {
                   Ver mapa
                 </Button>
               )}
-              {order.status === 'pending' && (
-                <Button
-                  onClick={() => toast.info("Función de pago a implementar")}
-                  className="flex-1 bg-green-600 text-white rounded-full font-bold py-3 hover:bg-green-700 transition-colors"
-                >
-                  Proceder al pago
-                </Button>
-              )}
             </div>
           </div>
         </div>

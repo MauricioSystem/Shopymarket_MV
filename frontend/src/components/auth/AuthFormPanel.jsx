@@ -111,7 +111,7 @@ function AuthFormPanel({
       ? "border-[rgba(140,90,43,0.16)]"
       : "border-[rgba(201,150,12,0.14)]";
 
-  const deliveryLinkText = "¿Quieres registrarte como delivery? Hazlo aquí.";
+  // const deliveryLinkText = "";
   const returnToCustomerText =
     "¿Prefieres volver al modo cliente? Volver aquí.";
 
@@ -400,30 +400,14 @@ function AuthFormPanel({
                 <ModeSwitchLink onClick={onToggleVendorMode}>
                   ¿Prefieres comprar como cliente? Volver a modo cliente.
                 </ModeSwitchLink>
-                <ModeSwitchLink
-                  onClick={() => {
-                    onSelectRole?.(AUTH_ROLES.DELIVERY);
-                    onToggleMode('login');
-                  }}
-                  className="mt-3 block text-[#8c5a2b] decoration-[#c9935a]"
-                >
-                  {deliveryLinkText}
-                </ModeSwitchLink>
+                {/* Delivery login link removed for now */}
               </>
             ) : (
               <>
                 <ModeSwitchLink onClick={onToggleVendorMode}>
                   ¿Quieres gestionar tu negocio? Inicia sesión aquí.
                 </ModeSwitchLink>
-                <ModeSwitchLink
-                  onClick={() => {
-                    onSelectRole?.(AUTH_ROLES.DELIVERY);
-                    onToggleMode('login');
-                  }}
-                  className="mt-3 block text-[#8c5a2b] decoration-[#c9935a]"
-                >
-                  {deliveryLinkText}
-                </ModeSwitchLink>
+                {/* Delivery login link removed for now */}
               </>
             )}
 

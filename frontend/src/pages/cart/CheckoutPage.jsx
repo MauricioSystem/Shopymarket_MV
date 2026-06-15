@@ -62,7 +62,7 @@ function Checkbox({ checked, onChange, label }) {
 }
 
 // ── Input / Select de formulario ────────────────────────────────────────────
-function FormInput({ label, id, required, type = 'text', options, ...props }) {
+function FormInput({ label, id, required, type = 'text', options, error, prefix, ...props }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-xs font-bold text-slate-600 uppercase tracking-wider">
@@ -71,7 +71,11 @@ function FormInput({ label, id, required, type = 'text', options, ...props }) {
       {options ? (
         <select
           id={id}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#c8960c]/50 focus:border-[#c8960c] transition-all"
+          className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all ${
+            error 
+              ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' 
+              : 'border-slate-200 focus:ring-[#c8960c]/50 focus:border-[#c8960c]'
+          }`}
           {...props}
         >
           {options.map(opt => (
@@ -79,12 +83,28 @@ function FormInput({ label, id, required, type = 'text', options, ...props }) {
           ))}
         </select>
       ) : (
-        <input
-          id={id}
-          type={type}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#c8960c]/50 focus:border-[#c8960c] transition-all placeholder:text-slate-400"
-          {...props}
-        />
+        <div className="relative flex items-center w-full">
+          {prefix && (
+            <span className="absolute left-4 text-sm font-semibold text-slate-400 select-none pointer-events-none">
+              {prefix}
+            </span>
+          )}
+          <input
+            id={id}
+            type={type}
+            className={`w-full bg-slate-50 border rounded-xl py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all placeholder:text-slate-400 ${
+              prefix ? 'pl-16 pr-4' : 'px-4'
+            } ${
+              error 
+                ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' 
+                : 'border-slate-200 focus:ring-[#c8960c]/50 focus:border-[#c8960c]'
+            }`}
+            {...props}
+          />
+        </div>
+      )}
+      {error && (
+        <p className="text-[11px] text-red-500 font-semibold mt-0.5">{error}</p>
       )}
     </div>
   );
@@ -147,8 +167,94 @@ function StepCart({ cartItems, cartTotal, onNext }) {
 
 // ── Paso 2: Datos de Facturación ──────────────────────────────────────────────
 function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
-  const handleChange = (e) => setBillingData(prev => ({ ...prev, [e.target.id]: e.target.value }));
-  const isValid = billingData.full_name && billingData.email && billingData.document_number;
+  const [touched, setTouched] = useState({});
+
+  const validate = (data) => {
+    const newErrors = {};
+
+    // full_name
+    if (!data.full_name || !data.full_name.trim()) {
+      newErrors.full_name = "El nombre completo es requerido.";
+    } else if (data.full_name.trim().length < 3) {
+      newErrors.full_name = "Debe tener al menos 3 caracteres.";
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.full_name)) {
+      newErrors.full_name = "El nombre solo debe contener letras.";
+    }
+
+    // email
+    if (!data.email || !data.email.trim()) {
+      newErrors.email = "El correo electrónico es requerido.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
+      newErrors.email = "Ingresa un correo electrónico válido.";
+    }
+
+    // phone (optional)
+    if (data.phone && data.phone.trim()) {
+      const digits = data.phone.trim();
+      if (!/^\d+$/.test(digits)) {
+        newErrors.phone = "El teléfono debe contener solo números.";
+      } else if (digits.length !== 8) {
+        newErrors.phone = "El teléfono debe tener exactamente 8 dígitos.";
+      }
+    }
+
+    // document_number
+    if (!data.document_number || !data.document_number.trim()) {
+      newErrors.document_number = "El número de documento es requerido.";
+    } else {
+      const doc = data.document_number.trim();
+      if (data.document_type === 'CI') {
+        if (!/^[a-zA-Z0-9\-]+$/.test(doc)) {
+          newErrors.document_number = "CI inválido (solo letras, números y guión).";
+        } else if (doc.length < 7) {
+          newErrors.document_number = "El CI debe tener al menos 7 caracteres.";
+        }
+      } else if (data.document_type === 'NIT') {
+        if (!/^\d+$/.test(doc)) {
+          newErrors.document_number = "El NIT debe contener solo números.";
+        } else if (doc.length < 8 || doc.length > 15) {
+          newErrors.document_number = "El NIT debe tener entre 8 y 15 dígitos.";
+        }
+      } else if (data.document_type === 'PASSPORT') {
+        if (!/^[a-zA-Z0-9]+$/.test(doc)) {
+          newErrors.document_number = "El pasaporte solo debe contener letras y números.";
+        } else if (doc.length < 6) {
+          newErrors.document_number = "El pasaporte debe tener al menos 6 caracteres.";
+        }
+      }
+    }
+
+    return newErrors;
+  };
+
+  const currentErrors = validate(billingData);
+  const isValid = Object.keys(currentErrors).length === 0;
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setBillingData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleBlur = (e) => {
+    const { id } = e.target;
+    setTouched(prev => ({ ...prev, [id]: true }));
+  };
+
+  const handleNext = () => {
+    // Mark all fields as touched
+    setTouched({
+      full_name: true,
+      email: true,
+      phone: true,
+      document_type: true,
+      document_number: true,
+      billing_address: true,
+    });
+    if (isValid) {
+      onNext();
+    }
+  };
+
   return (
     <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-10 shadow-sm space-y-8">
       <div>
@@ -158,20 +264,76 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="sm:col-span-2">
-          <FormInput id="full_name" label="Nombre completo" required placeholder="Como aparece en tu CI o pasaporte" value={billingData.full_name} onChange={handleChange} />
+          <FormInput 
+            id="full_name" 
+            label="Nombre completo" 
+            required 
+            placeholder="Como aparece en tu CI o pasaporte" 
+            value={billingData.full_name} 
+            onChange={handleChange} 
+            onBlur={handleBlur}
+            error={touched.full_name && currentErrors.full_name}
+          />
         </div>
-        <FormInput id="email" label="Correo electrónico" required type="email" placeholder="correo@ejemplo.com" value={billingData.email} onChange={handleChange} />
-        <FormInput id="phone" label="Teléfono" placeholder="+591 7XXXXXXX" value={billingData.phone} onChange={handleChange} />
-        <FormInput id="document_type" label="Tipo de documento" required
+        <FormInput 
+          id="email" 
+          label="Correo electrónico" 
+          required 
+          type="email" 
+          placeholder="correo@ejemplo.com" 
+          value={billingData.email} 
+          onChange={handleChange} 
+          onBlur={handleBlur}
+          error={touched.email && currentErrors.email}
+        />
+        <FormInput 
+          id="phone" 
+          label="Teléfono" 
+          placeholder="7XXXXXXX" 
+          value={billingData.phone} 
+          onChange={handleChange} 
+          onBlur={handleBlur}
+          prefix="+591"
+          maxLength={8}
+          error={touched.phone && currentErrors.phone}
+        />
+        <FormInput 
+          id="document_type" 
+          label="Tipo de documento" 
+          required
           options={[
             { value: 'CI', label: 'Cédula de Identidad (CI)' },
             { value: 'NIT', label: 'NIT Empresa' },
             { value: 'PASSPORT', label: 'Pasaporte' },
           ]}
-          value={billingData.document_type} onChange={handleChange} />
-        <FormInput id="document_number" label="Número de documento" required placeholder="Ej: 1234567" value={billingData.document_number} onChange={handleChange} />
+          value={billingData.document_type} 
+          onChange={(e) => {
+            handleChange(e);
+            // Reset document number error when document type changes
+            setTouched(prev => ({ ...prev, document_number: false }));
+          }} 
+          onBlur={handleBlur}
+        />
+        <FormInput 
+          id="document_number" 
+          label="Número de documento" 
+          required 
+          placeholder="Ej: 1234567" 
+          value={billingData.document_number} 
+          onChange={handleChange} 
+          onBlur={handleBlur}
+          error={touched.document_number && currentErrors.document_number}
+        />
         <div className="sm:col-span-2">
-          <FormInput id="billing_address" label="Dirección de facturación" placeholder="Ej: Av. Ballivián #120, Cochabamba" value={billingData.billing_address} onChange={handleChange} />
+          <FormInput 
+            id="billing_address" 
+            label="Dirección de facturación" 
+            placeholder="Ej: Av. Ballivián #120, Cochabamba" 
+            value={billingData.billing_address} 
+            onChange={handleChange} 
+            onBlur={handleBlur}
+            error={touched.billing_address && currentErrors.billing_address}
+          />
         </div>
       </div>
 
@@ -179,7 +341,11 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
         <button onClick={onBack} className="px-6 py-3 rounded-full border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors">
           ← Volver
         </button>
-        <Button onClick={onNext} disabled={!isValid} className={`flex-1 py-3.5 rounded-full font-bold text-sm ${!isValid ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[#1a1200] text-[#fff8df] hover:opacity-90'}`}>
+        <Button 
+          onClick={handleNext} 
+          disabled={!isValid} 
+          className={`flex-1 py-3.5 rounded-full font-bold text-sm ${!isValid ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[#1a1200] text-[#fff8df] hover:opacity-90'}`}
+        >
           Continuar →
         </Button>
       </div>
@@ -534,10 +700,15 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState(0);
 
+  const cleanPhone = (phoneStr) => {
+    if (!phoneStr) return '';
+    return phoneStr.replace("+591", "").replace(/\D/g, "");
+  };
+
   const [billingData, setBillingData] = useState({
     full_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : '',
     email: user?.email || '',
-    phone: user?.phone || '',
+    phone: user ? cleanPhone(user.phone) : '',
     document_type: 'CI',
     document_number: '',
     billing_address: userAddressText,
