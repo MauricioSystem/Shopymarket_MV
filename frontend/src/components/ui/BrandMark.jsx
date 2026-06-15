@@ -4,7 +4,7 @@ import { cx } from "@/utils/cx";
 function BrandMark({
   compact = false,
   mode = "customer",
-  logoSrc = "logos/logoDiseño.png",
+  logoSrc = "/logos/logoDiseño.png",
   tone = "dark",
 }) {
   const textToneClass = tone === "light" ? "text-white" : "text-[var(--text)]";
