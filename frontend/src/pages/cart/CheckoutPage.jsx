@@ -177,6 +177,8 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
       newErrors.full_name = "El nombre completo es requerido.";
     } else if (data.full_name.trim().length < 3) {
       newErrors.full_name = "Debe tener al menos 3 caracteres.";
+    } else if (data.full_name.trim().length > 50) {
+      newErrors.full_name = "Debe tener máximo 50 caracteres.";
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.full_name)) {
       newErrors.full_name = "El nombre solo debe contener letras.";
     }
@@ -184,6 +186,8 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
     // email
     if (!data.email || !data.email.trim()) {
       newErrors.email = "El correo electrónico es requerido.";
+    } else if (data.email.trim().length > 100) {
+      newErrors.email = "Debe tener máximo 100 caracteres.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
       newErrors.email = "Ingresa un correo electrónico válido.";
     }
@@ -203,7 +207,9 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
       newErrors.document_number = "El número de documento es requerido.";
     } else {
       const doc = data.document_number.trim();
-      if (data.document_type === 'CI') {
+      if (doc.length > 15) {
+        newErrors.document_number = "El documento debe tener máximo 15 caracteres.";
+      } else if (data.document_type === 'CI') {
         if (!/^[a-zA-Z0-9\-]+$/.test(doc)) {
           newErrors.document_number = "CI inválido (solo letras, números y guión).";
         } else if (doc.length < 7) {
@@ -212,8 +218,8 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
       } else if (data.document_type === 'NIT') {
         if (!/^\d+$/.test(doc)) {
           newErrors.document_number = "El NIT debe contener solo números.";
-        } else if (doc.length < 8 || doc.length > 15) {
-          newErrors.document_number = "El NIT debe tener entre 8 y 15 dígitos.";
+        } else if (doc.length < 8) {
+          newErrors.document_number = "El NIT debe tener al menos 8 dígitos.";
         }
       } else if (data.document_type === 'PASSPORT') {
         if (!/^[a-zA-Z0-9]+$/.test(doc)) {
@@ -221,6 +227,18 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
         } else if (doc.length < 6) {
           newErrors.document_number = "El pasaporte debe tener al menos 6 caracteres.";
         }
+      }
+    }
+
+    // billing_address (optional but if filled, validate)
+    if (data.billing_address && data.billing_address.trim()) {
+      const addr = data.billing_address.trim();
+      if (addr.length > 100) {
+        newErrors.billing_address = "La dirección debe tener máximo 100 caracteres.";
+      } else if (/^\d+$/.test(addr)) {
+        newErrors.billing_address = "La dirección no puede contener solo números.";
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\.,#\-]+$/.test(addr)) {
+        newErrors.billing_address = "La dirección contiene caracteres no permitidos (evita ?, /, :, ', etc.).";
       }
     }
 
@@ -272,6 +290,7 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
             value={billingData.full_name} 
             onChange={handleChange} 
             onBlur={handleBlur}
+            maxLength={50}
             error={touched.full_name && currentErrors.full_name}
           />
         </div>
@@ -284,6 +303,7 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
           value={billingData.email} 
           onChange={handleChange} 
           onBlur={handleBlur}
+          maxLength={100}
           error={touched.email && currentErrors.email}
         />
         <FormInput 
@@ -322,6 +342,7 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
           value={billingData.document_number} 
           onChange={handleChange} 
           onBlur={handleBlur}
+          maxLength={15}
           error={touched.document_number && currentErrors.document_number}
         />
         <div className="sm:col-span-2">
@@ -332,6 +353,7 @@ function StepBilling({ user, billingData, setBillingData, onNext, onBack }) {
             value={billingData.billing_address} 
             onChange={handleChange} 
             onBlur={handleBlur}
+            maxLength={100}
             error={touched.billing_address && currentErrors.billing_address}
           />
         </div>
@@ -445,7 +467,7 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
   const [placed, setPlaced] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-    const { refreshCart } = useCart();
+  const { refreshCart } = useCart();
   const { token } = useAuth();
 
   const placingRef = useRef(false);
@@ -462,18 +484,110 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
     : allPaymentMethods;
 
   const [finalTotal, setFinalTotal] = useState(0);
-  
-  const shippingCost = deliveryData.method === 'delivery' ? 15 : 0;
-  const finalCalculatedTotal = cartTotal + shippingCost;
+  const [touchedCard, setTouchedCard] = useState({});
 
-  const isCardValid = paymentData.card_number?.length > 10 && paymentData.card_expiry && paymentData.card_cvv && paymentData.card_name;
-  const canSubmit = agreedToTerms && paymentData.method && (paymentData.method !== 'card' || isCardValid);
+  const validateCard = (data) => {
+    const errors = {};
+    if (data.method === 'card') {
+      // card_number
+      const rawNum = (data.card_number || '').replace(/\s/g, '');
+      if (!rawNum) {
+        errors.card_number = "El número de tarjeta es requerido.";
+      } else if (!/^\d+$/.test(rawNum)) {
+        errors.card_number = "Solo debe contener números.";
+      } else if (rawNum.length !== 16) {
+        errors.card_number = "Debe tener exactamente 16 dígitos.";
+      }
+
+      // card_expiry
+      const expiry = data.card_expiry || '';
+      if (!expiry) {
+        errors.card_expiry = "Requerido.";
+      } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
+        errors.card_expiry = "Formato MM/AA inválido.";
+      } else {
+        const [month, year] = expiry.split('/').map(Number);
+        const now = new Date();
+        const currentYear = now.getFullYear() % 100; // last 2 digits
+        const currentMonth = now.getMonth() + 1; // 1-indexed
+        if (year < currentYear || (year === currentYear && month < currentMonth)) {
+          errors.card_expiry = "Expirado.";
+        }
+      }
+
+      // card_cvv
+      const cvv = data.card_cvv || '';
+      if (!cvv) {
+        errors.card_cvv = "Requerido.";
+      } else if (!/^\d{3}$/.test(cvv)) {
+        errors.card_cvv = "CVV de 3 dígitos.";
+      }
+
+      // card_name
+      const name = data.card_name || '';
+      if (!name || !name.trim()) {
+        errors.card_name = "El nombre es requerido.";
+      } else if (name.trim().length < 3) {
+        errors.card_name = "Debe tener al menos 3 caracteres.";
+      } else if (name.trim().length > 50) {
+        errors.card_name = "Debe tener máximo 50 caracteres.";
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name)) {
+        errors.card_name = "El nombre solo debe contener letras.";
+      }
+    }
+    return errors;
+  };
+
+  const cardErrors = validateCard(paymentData);
+  const isCardFormValid = Object.keys(cardErrors).length === 0;
+
+  const appFee = 2.00;
+  const shippingCost = deliveryData.method === 'delivery' ? 15 : 0;
+  const finalCalculatedTotal = cartTotal + shippingCost + appFee;
+
+  const canSubmit = agreedToTerms && paymentData.method && (paymentData.method !== 'card' || isCardFormValid);
+
+  const handleCardNumberChange = (e) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 16) val = val.slice(0, 16);
+    const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+    setPaymentData(p => ({ ...p, card_number: formatted }));
+  };
+
+  const handleCardExpiryChange = (e) => {
+    let input = e.target.value;
+    if (e.nativeEvent.inputType === 'deleteContentBackward' && input.endsWith('/')) {
+      input = input.slice(0, -1);
+    }
+    let clean = input.replace(/\D/g, '');
+    if (clean.length > 4) clean = clean.slice(0, 4);
+    
+    let formatted = clean;
+    if (clean.length > 2) {
+      formatted = clean.slice(0, 2) + '/' + clean.slice(2);
+    }
+    setPaymentData(p => ({ ...p, card_expiry: formatted }));
+  };
+
+  const handleCardCvvChange = (e) => {
+    const clean = e.target.value.replace(/\D/g, '').slice(0, 3);
+    setPaymentData(p => ({ ...p, card_cvv: clean }));
+  };
+
+  const handleCardNameChange = (e) => {
+    setPaymentData(p => ({ ...p, card_name: e.target.value }));
+  };
+
+  const handleCardBlur = (e) => {
+    const { id } = e.target;
+    setTouchedCard(p => ({ ...p, [id]: true }));
+  };
 
   const handlePlaceOrder = async () => {
     if (!canSubmit || placingRef.current) return;
     placingRef.current = true;
-     setPlacing(true);
-        setError(null);
+    setPlacing(true);
+    setError(null);
     
     try {
       const parsedDeliveryAddress = parseAddressCoords(deliveryData.address);
@@ -489,7 +603,7 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
       const orderPayload = {
         order_type: deliveryData.method,
         delivery_address: finalDeliveryAddress,
-        shipping_cost: shippingCost,
+        shipping_cost: shippingCost + appFee,
         discount: 0
       };
 
@@ -592,12 +706,49 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
         {paymentData.method === 'card' && (
           <div className="space-y-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 animate-fade-in">
             <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Datos de tarjeta</h3>
-            <FormInput id="card_number" label="Número de tarjeta" placeholder="•••• •••• •••• ••••" maxLength="19" value={paymentData.card_number || ''} onChange={(e) => setPaymentData(p => ({ ...p, card_number: e.target.value }))} />
+            <FormInput 
+              id="card_number" 
+              label="Número de tarjeta" 
+              placeholder="•••• •••• •••• ••••" 
+              maxLength={19} 
+              value={paymentData.card_number || ''} 
+              onChange={handleCardNumberChange} 
+              onBlur={handleCardBlur}
+              error={touchedCard.card_number && cardErrors.card_number}
+            />
             <div className="grid grid-cols-2 gap-4">
-              <FormInput id="card_expiry" label="Vencimiento" placeholder="MM/AA" maxLength="5" value={paymentData.card_expiry || ''} onChange={(e) => setPaymentData(p => ({ ...p, card_expiry: e.target.value }))} />
-              <FormInput id="card_cvv" label="CVV" placeholder="•••" maxLength="4" type="password" value={paymentData.card_cvv || ''} onChange={(e) => setPaymentData(p => ({ ...p, card_cvv: e.target.value }))} />
+              <FormInput 
+                id="card_expiry" 
+                label="Vencimiento" 
+                placeholder="MM/AA" 
+                maxLength={5} 
+                value={paymentData.card_expiry || ''} 
+                onChange={handleCardExpiryChange} 
+                onBlur={handleCardBlur}
+                error={touchedCard.card_expiry && cardErrors.card_expiry}
+              />
+              <FormInput 
+                id="card_cvv" 
+                label="CVV" 
+                placeholder="•••" 
+                maxLength={3} 
+                type="password"
+                value={paymentData.card_cvv || ''} 
+                onChange={handleCardCvvChange} 
+                onBlur={handleCardBlur}
+                error={touchedCard.card_cvv && cardErrors.card_cvv}
+              />
             </div>
-            <FormInput id="card_name" label="Nombre en la tarjeta" placeholder="Como aparece en la tarjeta" value={paymentData.card_name || ''} onChange={(e) => setPaymentData(p => ({ ...p, card_name: e.target.value }))} />
+            <FormInput 
+              id="card_name" 
+              label="Nombre en la tarjeta" 
+              placeholder="Como aparece en la tarjeta" 
+              maxLength={50}
+              value={paymentData.card_name || ''} 
+              onChange={handleCardNameChange} 
+              onBlur={handleCardBlur}
+              error={touchedCard.card_name && cardErrors.card_name}
+            />
           </div>
         )}
 
@@ -646,6 +797,7 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
         <div className="space-y-2.5 text-sm text-slate-600">
           <div className="flex justify-between"><span>Subtotal ({cartItems.length} artículos)</span><span className="font-bold">Bs {Number(cartTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Envío</span><span className="font-bold text-[#c8960c]">{deliveryData.method === 'pickup' ? 'Gratis (recogida)' : `Bs ${Number(shippingCost).toFixed(2)}`}</span></div>
+          <div className="flex justify-between"><span>Uso de la aplicación</span><span className="font-bold text-[#c8960c]">Bs {Number(appFee).toFixed(2)}</span></div>
           <div className="flex justify-between text-base pt-2 border-t border-slate-100"><span className="font-bold text-slate-900">Total</span><span className="font-extrabold text-[#c8960c] text-xl">Bs {Number(finalCalculatedTotal).toFixed(2)}</span></div>
         </div>
 
