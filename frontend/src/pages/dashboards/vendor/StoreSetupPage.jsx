@@ -51,151 +51,7 @@ import { ProductCatalogSection } from '@/features/products/components/ProductCat
 import { ServiceCatalogSection } from '@/features/services/components/ServiceCatalogSection';
 import { VendorCategoriesSection } from '@/features/categories/components/VendorCategoriesSection';
 
-// High-fidelity seed mock orders fallback
-const SEED_MOCK_ORDERS = [
-  {
-    id: 1234,
-    customer_name: "Juan Perez",
-    customer_email: "juanperez@email.com",
-    total: 250.00,
-    created_at: new Date(Date.now() - 10 * 60000).toISOString(),
-    status: "pending",
-    order_type: "delivery",
-    delivery_address: "Av. Las Flores #321, Santa Cruz",
-    items: [{ name: "Llanta Michelin Pilot Sport 4", quantity: 1, unit_price: 250, subtotal: 250 }]
-  },
-  {
-    id: 1235,
-    customer_name: "Maria Gomez",
-    customer_email: "maria@gmail.com",
-    total: 100.00,
-    created_at: new Date(Date.now() - 60 * 60000).toISOString(),
-    status: "preparing",
-    order_type: "pickup",
-    delivery_address: "",
-    items: [{ name: "Aceite Castrol EDGE 5W-30", quantity: 1, unit_price: 100, subtotal: 100 }]
-  },
-  {
-    id: 1236,
-    customer_name: "Luis Cari",
-    customer_email: "luiscari@email.com",
-    total: 350.00,
-    created_at: new Date(Date.now() - 120 * 60000).toISOString(),
-    status: "paid",
-    order_type: "delivery",
-    delivery_address: "Calle Independencia #45, Tarija",
-    items: [{ name: "Batería Bosch S4 12V", quantity: 1, unit_price: 350, subtotal: 350 }]
-  },
-  {
-    id: 1237,
-    customer_name: "Ana Vargas",
-    customer_email: "anavargas@gmail.com",
-    total: 175.00,
-    created_at: new Date(Date.now() - 300 * 60000).toISOString(),
-    status: "shipped",
-    order_type: "delivery",
-    delivery_address: "Condominio Sevilla, Dep 4B, Santa Cruz",
-    items: [{ name: "Cargador USB para auto", quantity: 1, unit_price: 175, subtotal: 175 }]
-  },
-  {
-    id: 1238,
-    customer_name: "Roberto Sanchez",
-    customer_email: "roberto@gmail.com",
-    total: 420.00,
-    created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-    status: "delivered",
-    order_type: "pickup",
-    delivery_address: "",
-    items: [{ name: "Filtro de aire", quantity: 2, unit_price: 210, subtotal: 420 }]
-  }
-];
 
-const SEED_MOCK_SERVICE_ORDERS = [
-  {
-    id: 2234,
-    customer_name: "Juan Perez",
-    customer_email: "juanperez@email.com",
-    total: 150.00,
-    created_at: new Date(Date.now() - 10 * 60000).toISOString(),
-    status: "pending",
-    order_type: "booking",
-    delivery_address: "",
-    booking_date: new Date(Date.now() + 2 * 24 * 3600000).toLocaleDateString('es-ES'),
-    booking_time: "10:00",
-    booking_notes: "Solicito alineación completa y revisión de amortiguadores delanteros.",
-    items: [{ name: "Alineación y Balanceo Premium", quantity: 1, unit_price: 150, subtotal: 150 }]
-  },
-  {
-    id: 2235,
-    customer_name: "Maria Gomez",
-    customer_email: "maria@gmail.com",
-    total: 80.00,
-    created_at: new Date(Date.now() - 60 * 60000).toISOString(),
-    status: "confirmed",
-    order_type: "booking",
-    delivery_address: "",
-    booking_date: new Date(Date.now() + 3 * 24 * 3600000).toLocaleDateString('es-ES'),
-    booking_time: "14:30",
-    booking_notes: "Cambio de aceite y filtro.",
-    items: [{ name: "Cambio de Aceite Express", quantity: 1, unit_price: 80, subtotal: 80 }]
-  },
-  {
-    id: 2236,
-    customer_name: "Luis Cari",
-    customer_email: "luiscari@email.com",
-    total: 450.00,
-    created_at: new Date(Date.now() - 120 * 60000).toISOString(),
-    status: "completed",
-    order_type: "booking",
-    delivery_address: "",
-    booking_date: new Date(Date.now() - 1 * 24 * 3600000).toLocaleDateString('es-ES'),
-    booking_time: "09:00",
-    booking_notes: "Instalación de espirales progresivos.",
-    items: [{ name: "Instalación de Suspensión Deportiva", quantity: 1, unit_price: 450, subtotal: 450 }]
-  },
-  {
-    id: 2237,
-    customer_name: "Ana Vargas",
-    customer_email: "anavargas@gmail.com",
-    total: 200.00,
-    created_at: new Date(Date.now() - 300 * 60000).toISOString(),
-    status: "past",
-    order_type: "booking",
-    delivery_address: "",
-    booking_date: new Date(Date.now() - 2 * 24 * 3600000).toLocaleDateString('es-ES'),
-    booking_time: "16:00",
-    booking_notes: "Escaneo de motor por luz check engine encendida.",
-    items: [{ name: "Diagnóstico Computarizado de Motor", quantity: 1, unit_price: 200, subtotal: 200 }]
-  },
-  {
-    id: 2238,
-    customer_name: "Roberto Sanchez",
-    customer_email: "roberto@gmail.com",
-    total: 300.00,
-    created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-    status: "completed",
-    order_type: "booking",
-    delivery_address: "",
-    booking_date: new Date(Date.now() - 3 * 24 * 3600000).toLocaleDateString('es-ES'),
-    booking_time: "11:30",
-    booking_notes: "Revisar pastillas de freno y rectificar discos.",
-    items: [{ name: "Limpieza y Ajuste de Frenos", quantity: 1, unit_price: 300, subtotal: 300 }]
-  },
-  {
-    id: 2239,
-    customer_name: "Carlos Mendoza",
-    customer_email: "carlos@gmail.com",
-    total: 120.00,
-    created_at: new Date(Date.now() - 48 * 3600000).toISOString(),
-    status: "cancelled",
-    order_type: "booking",
-    delivery_address: "",
-    booking_date: new Date(Date.now() - 4 * 24 * 3600000).toLocaleDateString('es-ES'),
-    booking_time: "15:00",
-    booking_notes: "Lavado completo y detallado.",
-    items: [{ name: "Lavado de Motor a Vapor", quantity: 1, unit_price: 120, subtotal: 120 }]
-  }
-];
 
 const STATUS_MAP = {
   pending: { label: "Pendiente", color: "bg-amber-500/10 text-amber-500 border border-amber-500/20" },
@@ -730,25 +586,20 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
     // Update order status handler
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
-            const isServiceMock = Number(orderId) >= 2234 && Number(orderId) <= 2239;
-            const isProductMock = Number(orderId) >= 1234 && Number(orderId) <= 1238;
+            const isServiceMock = Number(orderId) >= 2000;
 
             if (isServiceMock) {
-                setServiceOrdersState(() => {
-                    const base = serviceOrdersState.length > 0 ? serviceOrdersState : SEED_MOCK_SERVICE_ORDERS;
-                    return base.map(o => Number(o.id) === Number(orderId) ? { ...o, status: newStatus } : o);
+                setServiceOrdersState((prev) => {
+                    const exists = prev.some(o => Number(o.id) === Number(orderId));
+                    if (exists) {
+                        return prev.map(o => Number(o.id) === Number(orderId) ? { ...o, status: newStatus } : o);
+                    } else {
+                        return [...prev, { id: Number(orderId), status: newStatus }];
+                    }
                 });
                 return;
             }
 
-            if (isProductMock) {
-                // Update local state for mockup orders
-                setOrders(() => {
-                    const base = orders.length > 0 ? orders : SEED_MOCK_ORDERS;
-                    return base.map(o => Number(o.id) === Number(orderId) ? { ...o, status: newStatus } : o);
-                });
-                return;
-            }
             await updateOrderStatus(orderId, newStatus, token);
             await loadOrders();
         } catch (err) {
@@ -758,9 +609,8 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
 
     // Fetch and show order details helper
     const handleViewDetails = async (o) => {
-        const isServiceMock = Number(o.id) >= 2234 && Number(o.id) <= 2239;
-        const isProductMock = Number(o.id) >= 1234 && Number(o.id) <= 1238;
-        if (isServiceMock || isProductMock) {
+        const isServiceMock = Number(o.id) >= 2000;
+        if (isServiceMock) {
             setSelectedOrderDetails(o);
             return;
         }
@@ -1249,7 +1099,7 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
                                             ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                                             : 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
                                     }`}>
-                                        {isServiceView ? '🔧 Servicios' : '🛒 Productos'}
+                                        {isServiceView ? 'Servicios' : 'Productos'}
                                     </span>
                                 </div>
                             </div>

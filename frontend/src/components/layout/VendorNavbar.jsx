@@ -46,7 +46,7 @@ export default function VendorNavbar() {
               {getDisplayName(user)}
             </span>
             <span className="text-[9px] text-[#f5d367] uppercase tracking-wider font-semibold">
-              admi
+              admin
             </span>
           </button>
 
