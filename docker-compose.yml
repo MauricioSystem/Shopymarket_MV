@@ -115,7 +115,7 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_AUTH_LOGIN_PATHS: ${VITE_AUTH_LOGIN_PATHS:-/auth/login,/api/auth/login,/login}
         VITE_AUTH_REGISTER_PATHS: ${VITE_AUTH_REGISTER_PATHS:-/auth/register,/api/auth/register,/register}
-    container_name: shopymarket-frontend
+    container_name: shopymarket
     restart: unless-stopped
     depends_on:
       - backend

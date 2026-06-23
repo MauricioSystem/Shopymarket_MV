@@ -15,7 +15,7 @@ services:
   # 🌐 FRONTEND — Sitio Estático (React + Vite)
   # ----------------------------------------------------------
   - type: web
-    name: shopymarket-frontend
+    name: shopymarket
     runtime: static
     rootDir: frontend
     buildCommand: npm run build
@@ -29,7 +29,7 @@ services:
       - key: VITE_APP_ENVIRONMENT
         value: production
       - key: VITE_SITE_URL
-        value: https://shopymarket-frontend.onrender.com
+        value: https://shopymarket.onrender.com
       - key: VITE_API_URL
         value: https://shopymarket-backend.onrender.com
 
@@ -48,11 +48,11 @@ services:
       - key: PORT
         value: 3000
       - key: SITE_URL
-        value: https://shopymarket-frontend.onrender.com
+        value: https://shopymarket.onrender.com
       - key: API_URL
         value: https://shopymarket-backend.onrender.com/api
       - key: CORS_ORIGIN
-        value: https://shopymarket-frontend.onrender.com,https://www.shopymarketmv.com,https://shopymarketmv.com
+        value: https://shopymarket.onrender.com,https://www.shopymarketmv.com,https://shopymarketmv.com
       
       # Autogenera una clave secreta para JWT automáticamente en Render
       - key: JWT_SECRET
