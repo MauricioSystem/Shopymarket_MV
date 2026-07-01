@@ -767,8 +767,21 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
         ...(showProductsTab ? [{ id: 'productos', label: 'Productos', icon: 'market' }] : []),
         ...(showServicesTab ? [{ id: 'servicios', label: 'Servicios', icon: 'wrench' }] : []),
         { id: 'categories', label: 'Categorías', icon: 'folder' },
+        { id: 'planes', label: 'Mis Planes', icon: 'star', href: '/plans' },
         { id: 'configuracion', label: 'Configuración', icon: 'settings' }
     ];
+
+    const handleNavItemClick = (tab, closeMobileMenu = false) => {
+        if (tab.href) {
+            navigate(tab.href);
+            setFeedbackMessage(null);
+            if (closeMobileMenu) setIsMobileMenuOpen(false);
+            return;
+        }
+        setActiveDashboardTab(tab.id);
+        setFeedbackMessage(null);
+        if (closeMobileMenu) setIsMobileMenuOpen(false);
+    };
 
     return (
         <div className="h-screen text-white bg-[#040912] flex font-sans overflow-hidden relative">
@@ -803,13 +816,9 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
                                     <button
                                         key={tab.id}
                                         type="button"
-                                        onClick={() => {
-                                            setActiveDashboardTab(tab.id);
-                                            setFeedbackMessage(null);
-                                            setIsMobileMenuOpen(false);
-                                        }}
+                                        onClick={() => handleNavItemClick(tab, true)}
                                         className={`w-full flex items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all rounded-none ${
-                                            activeDashboardTab === tab.id
+                                            activeDashboardTab === tab.id && !tab.href
                                                 ? 'bg-[#f5d367]/10 text-[#f5d367] border-l-2 border-[#f5d367]'
                                                 : 'text-white/60 hover:text-white hover:bg-white/[0.02]'
                                         }`}
@@ -909,12 +918,9 @@ export default function StoreSetupPage({ overrideUser = null, onBack = null }) {
                             <button
                                 key={tab.id}
                                 type="button"
-                                onClick={() => {
-                                    setActiveDashboardTab(tab.id);
-                                    setFeedbackMessage(null);
-                                }}
+                                onClick={() => handleNavItemClick(tab)}
                                 className={`w-full flex items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all rounded-none ${
-                                    activeDashboardTab === tab.id
+                                    activeDashboardTab === tab.id && !tab.href
                                         ? 'bg-[#f5d367]/10 text-[#f5d367] border-l-2 border-[#f5d367]'
                                         : 'text-white/60 hover:text-white hover:bg-white/[0.02]'
                                 }`}

@@ -17,6 +17,7 @@ const cartRoutes = require('./routes/cart/cartRoutes');
 const orderRoutes = require('./routes/order/orderRoutes');
 const shippingRoutes = require('./routes/shipping/shippingRoutes');
 const seoRoutes = require('./routes/seo/seoRoutes');
+const subscriptionRoutes = require('./routes/subscription/subscriptionRoutes');
 const { getSitemap, getRobots } = require('./controllers/seo/seoControllers');
 
 const app = express();
@@ -61,6 +62,7 @@ app.use('/api/carts', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/seo', seoRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

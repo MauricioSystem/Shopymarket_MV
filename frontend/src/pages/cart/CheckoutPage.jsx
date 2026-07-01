@@ -8,6 +8,7 @@ import { API_BASE_URL } from "@/config/appSettings";
 import { createOrder } from '../../services/orderApi';
 import Icon from '../../components/ui/Icon';
 import LeafletMap, { combineAddressCoords, parseAddressCoords } from '@/components/ui/LeafletMap';
+import { getMySubscription } from '@/services/subscriptionApi';
 
 const API_BASE = API_BASE_URL;
 const getImageUrl = (url) => url ? (url.startsWith("http") ? url : `${API_BASE}${url}`) : null;
@@ -461,7 +462,7 @@ function StepDelivery({ deliveryData, setDeliveryData, onNext, onBack }) {
 }
 
 // ── Paso 4: Pago ──────────────────────────────────────────────────────────────
-function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentData, setPaymentData, onBack }) {
+function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentData, setPaymentData, onBack, currentSubscription }) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
@@ -542,8 +543,14 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
   const isCardFormValid = Object.keys(cardErrors).length === 0;
 
   const appFee = 2.00;
-  const shippingCost = deliveryData.method === 'delivery' ? 15 : 0;
-  const finalCalculatedTotal = cartTotal + shippingCost + appFee;
+  const hasFreeShipping = currentSubscription?.free_shipping;
+  const discountRate = currentSubscription?.discount ? Number(currentSubscription.discount) : 0;
+
+  const baseShippingCost = deliveryData.method === 'delivery' ? 15 : 0;
+  const shippingCost = hasFreeShipping ? 0 : baseShippingCost;
+  
+  const discountAmount = cartTotal * (discountRate / 100);
+  const finalCalculatedTotal = cartTotal - discountAmount + shippingCost + appFee;
 
   const canSubmit = agreedToTerms && paymentData.method && (paymentData.method !== 'card' || isCardFormValid);
 
@@ -604,7 +611,7 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
         order_type: deliveryData.method,
         delivery_address: finalDeliveryAddress,
         shipping_cost: shippingCost + appFee,
-        discount: 0
+        discount: discountAmount
       };
 
       const response = await createOrder(orderPayload, token);
@@ -796,7 +803,22 @@ function StepPayment({ cartItems, cartTotal, billingData, deliveryData, paymentD
 
         <div className="space-y-2.5 text-sm text-slate-600">
           <div className="flex justify-between"><span>Subtotal ({cartItems.length} artículos)</span><span className="font-bold">Bs {Number(cartTotal).toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Envío</span><span className="font-bold text-[#c8960c]">{deliveryData.method === 'pickup' ? 'Gratis (recogida)' : `Bs ${Number(shippingCost).toFixed(2)}`}</span></div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between">
+              <span>Descuento Premium ({discountRate}%)</span>
+              <span className="font-bold text-green-600">- Bs {Number(discountAmount).toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span>Envío</span>
+            <span className="font-bold text-[#c8960c]">
+              {deliveryData.method === 'pickup' 
+                ? 'Gratis (recogida)' 
+                : hasFreeShipping 
+                  ? <><span className="line-through text-slate-400 mr-2">Bs 15.00</span> Gratis (Premium)</>
+                  : `Bs ${Number(shippingCost).toFixed(2)}`}
+            </span>
+          </div>
           <div className="flex justify-between"><span>Uso de la aplicación</span><span className="font-bold text-[#c8960c]">Bs {Number(appFee).toFixed(2)}</span></div>
           <div className="flex justify-between text-base pt-2 border-t border-slate-100"><span className="font-bold text-slate-900">Total</span><span className="font-extrabold text-[#c8960c] text-xl">Bs {Number(finalCalculatedTotal).toFixed(2)}</span></div>
         </div>
@@ -846,11 +868,20 @@ const STEPS = [
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, loadingCart } = useCart();
-  const { user } = useAuth();
+  const { user, token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const userAddressText = parseAddressCoords(user?.address).text || user?.address || '';
 
   const [step, setStep] = useState(0);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
+
+  React.useEffect(() => {
+    if (isAuthenticated && token) {
+      getMySubscription(token)
+        .then(res => setCurrentSubscription(res.data))
+        .catch(err => console.error("Error fetching subscription", err));
+    }
+  }, [isAuthenticated, token]);
 
   const cleanPhone = (phoneStr) => {
     if (!phoneStr) return '';
@@ -934,6 +965,7 @@ export default function CheckoutPage() {
             paymentData={paymentData}
             setPaymentData={setPaymentData}
             onBack={() => setStep(2)}
+            currentSubscription={currentSubscription}
           />
         )}
       </main>

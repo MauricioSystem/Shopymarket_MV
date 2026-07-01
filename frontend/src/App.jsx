@@ -23,6 +23,9 @@ import OrderDetailPage from "./pages/customer/OrderDetailPage";
 // Cart Imports
 import CheckoutPage from "./pages/cart/CheckoutPage";
 
+// Plans Imports
+import PlansPage from "./pages/plans/PlansPage";
+
 // Component for public pages that shouldn't be accessible to logged in users (e.g. login/register)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, capabilities, isHydrated } = useAuth();
@@ -160,6 +163,12 @@ function App() {
           <HomeRouteGuard>
             <MarketPage />
           </HomeRouteGuard>
+        }
+      />
+      <Route
+        path="/plans"
+        element={
+          <PlansPage />
         }
       />
 

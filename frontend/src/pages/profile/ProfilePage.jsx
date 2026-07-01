@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
@@ -8,6 +9,7 @@ import { getDisplayName, getProfileImageUrl } from "@/utils/userCapabilities";
 import { getRoleLabel, AUTH_ROLES } from "@/utils/authRoles";
 import { getStoreByUserId, getServiceProfileByUserId, updateMyStore, updateServiceProfile } from "@/services/marketApi";
 import { deleteUser } from "@/services/usersApi";
+import { getMySubscription } from "@/services/subscriptionApi";
 import { parseAddressCoords } from "@/components/ui/LeafletMap";
 
 function getInitials(user) {
@@ -71,6 +73,15 @@ export default function ProfilePage() {
   const { user, role, token, logout, capabilities } = useAuth();
   const navigate = useNavigate();
   const roleLabel = getRoleLabel(role);
+  const [subscription, setSubscription] = useState(null);
+
+  useEffect(() => {
+    if (token) {
+      getMySubscription(token)
+        .then(res => setSubscription(res.data))
+        .catch(err => console.error("Error fetching subscription:", err));
+    }
+  }, [token]);
 
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
@@ -182,19 +193,26 @@ export default function ProfilePage() {
           <div className="relative mt-8 flex flex-col items-center text-center md:flex-row md:items-start md:text-left gap-8">
             
             <div className="flex flex-col items-center shrink-0">
-              <div className={`relative flex h-32 w-32 items-center justify-center rounded-full border-4 ${theme.mode === 'customer' ? 'border-white shadow-lg' : 'border-[#080f1c]'} bg-neutral-100 text-3xl font-extrabold overflow-hidden shadow-2xl`}>
-                {user?.profile_image_url ? (
-                  <img
-                    src={getProfileImageUrl(user.profile_image_url)}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "";
-                    }}
-                  />
-                ) : (
-                  <span className={theme.accentText}>{getInitials(user)}</span>
+              <div className="relative">
+                <div className={`relative flex h-32 w-32 items-center justify-center rounded-full border-4 ${theme.mode === 'customer' ? 'border-white shadow-lg' : 'border-[#080f1c]'} bg-neutral-100 text-3xl font-extrabold overflow-hidden shadow-2xl`}>
+                  {user?.profile_image_url ? (
+                    <img
+                      src={getProfileImageUrl(user.profile_image_url)}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "";
+                      }}
+                    />
+                  ) : (
+                    <span className={theme.accentText}>{getInitials(user)}</span>
+                  )}
+                </div>
+                {subscription && Number(subscription.plan_price) > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-[#1a1200] p-1.5 rounded-full border-2 border-[#c8960c] shadow-lg z-10" title="Usuario Premium">
+                    <Icon name="star" className="h-6 w-6 text-[#f5d367] fill-[#f5d367]" />
+                  </div>
                 )}
               </div>
 

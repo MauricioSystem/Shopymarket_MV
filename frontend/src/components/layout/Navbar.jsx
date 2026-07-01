@@ -191,6 +191,7 @@ export default function Navbar() {
         >
           <NavLink label="Inicio"          to="/home"   />
           <NavLink label="Explorar Mercado" to="/market" />
+          <NavLink label="Mis Planes" to="/plans" />
         </nav>
 
         {/* ── CENTER – Logo (absolute to guarantee true centering) ── */}
@@ -280,6 +281,7 @@ function MobileMenu({ isAuthenticated, role, navigate, logout, openCart, cartCou
             <div className="py-1">
               <MobileItem label="Inicio" icon="home" onClick={() => go('/home')}   />
               <MobileItem label="Explorar Mercado" icon="market" onClick={() => go('/market')} />
+              <MobileItem label="Mis Planes" icon="star" onClick={() => go('/plans')} />
             </div>
 
             {!isAuthenticated ? (
