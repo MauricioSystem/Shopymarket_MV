@@ -4,13 +4,14 @@ const pool = require('../src/db/database');
     try {
         console.log('Inserting default subscription plans...');
         const seedQuery = `
-            INSERT INTO subscription_plans 
-            (name, type, price, discount, free_shipping, points_enabled, featured_products, reduced_commission, search_priority)
-            VALUES 
-            ('Básico Usuario', 'user', 0.00, 0.00, false, true, false, false, false),
-            ('Premium Usuario', 'user', 10.00, 10.00, true, true, false, false, false),
-            ('Básico Vendedor', 'admin', 0.00, 0.00, false, false, false, false, false),
-            ('Premium Vendedor', 'admin', 20.00, 0.00, false, false, true, true, true)
+            INSERT INTO subscription_plans
+            (name, type, price, discount, free_shipping, points_enabled, featured_products, reduced_commission, search_priority, status)
+            VALUES
+            ('Básico Usuario', 'user', 0.00, 0.00, false, true, false, false, false, 'active'),
+            ('Premium Usuario', 'user', 10.00, 10.00, true, true, false, false, false, 'active'),
+            ('Básico Vendedor', 'admin', 0.00, 0.00, false, false, false, false, false, 'active'),
+            ('Premium Vendedor', 'admin', 20.00, 0.00, false, false, true, true, true, 'active')
+            ON CONFLICT (name) DO NOTHING
         `;
         await pool.query(seedQuery);
         console.log('Default plans seeded successfully.');

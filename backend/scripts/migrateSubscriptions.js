@@ -8,7 +8,7 @@ const migrateSubscriptions = async () => {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS subscription_plans (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
+                name VARCHAR(100) NOT NULL UNIQUE,
                 type VARCHAR(50) NOT NULL, -- 'user' or 'admin'
                 price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
                 discount DECIMAL(5, 2) DEFAULT 0.00, -- e.g., 5.00 for 5%
@@ -37,24 +37,24 @@ const migrateSubscriptions = async () => {
         `);
         console.log('Table user_subscriptions checked/created.');
 
-        // Seed default plans if they don't exist
-        const checkPlans = await pool.query('SELECT COUNT(*) FROM subscription_plans');
-        if (parseInt(checkPlans.rows[0].count) === 0) {
-            console.log('Seeding subscription plans...');
-            const seedQuery = `
-                INSERT INTO subscription_plans 
-                (name, type, price, discount, free_shipping, points_enabled, featured_products, reduced_commission, search_priority)
-                VALUES 
-                ('Básico Usuario', 'user', 0.00, 0.00, false, true, false, false, false),
-                ('Premium Usuario', 'user', 10.00, 10.00, true, true, false, false, false),
-                ('Básico Vendedor', 'admin', 0.00, 0.00, false, false, false, false, false),
-                ('Premium Vendedor', 'admin', 20.00, 0.00, false, false, true, true, true)
-            `;
-            await pool.query(seedQuery);
-            console.log('Default plans seeded.');
-        } else {
-            console.log('Plans already exist, skipping seed.');
+        // Seed default plans if missing (idempotent — safe on every deploy)
+        const defaultPlans = [
+            ['Básico Usuario', 'user', 0.00, 0.00, false, true, false, false, false],
+            ['Premium Usuario', 'user', 10.00, 10.00, true, true, false, false, false],
+            ['Básico Vendedor', 'admin', 0.00, 0.00, false, false, false, false, false],
+            ['Premium Vendedor', 'admin', 20.00, 0.00, false, false, true, true, true],
+        ];
+
+        for (const [name, type, price, discount, freeShipping, pointsEnabled, featuredProducts, reducedCommission, searchPriority] of defaultPlans) {
+            await pool.query(
+                `INSERT INTO subscription_plans
+                  (name, type, price, discount, free_shipping, points_enabled, featured_products, reduced_commission, search_priority, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')
+                 ON CONFLICT (name) DO NOTHING`,
+                [name, type, price, discount, freeShipping, pointsEnabled, featuredProducts, reducedCommission, searchPriority]
+            );
         }
+        console.log('Default plans ensured.');
 
         console.log('Subscription migration completed successfully.');
         process.exit(0);

@@ -371,6 +371,23 @@ const init = async () => {
       ['Sin Plan', 'free', 0, 0, false, false, false, false, false, 'active']
     );
 
+    const defaultPlans = [
+      ['Básico Usuario', 'user', 0, 0, false, true, false, false, false],
+      ['Premium Usuario', 'user', 10, 10, true, true, false, false, false],
+      ['Básico Vendedor', 'admin', 0, 0, false, false, false, false, false],
+      ['Premium Vendedor', 'admin', 20, 0, false, false, true, true, true],
+    ];
+
+    for (const [name, type, price, discount, freeShipping, pointsEnabled, featuredProducts, reducedCommission, searchPriority] of defaultPlans) {
+      await pool.query(
+        `INSERT INTO subscription_plans
+          (name, type, price, discount, free_shipping, points_enabled, featured_products, reduced_commission, search_priority, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')
+         ON CONFLICT (name) DO NOTHING`,
+        [name, type, price, discount, freeShipping, pointsEnabled, featuredProducts, reducedCommission, searchPriority]
+      );
+    }
+
     const email = process.env.SUPERADMIN_EMAIL || 'root@root.com';
     const password = process.env.SUPERADMIN_PASSWORD || 'Root123!';
     const firstName = process.env.SUPERADMIN_FIRST_NAME || 'Super';
